@@ -10,6 +10,7 @@ import pool from './config/db.js';
 import loginRoutes from './routes/loginRoute.js';
 import salesRepRoutes from './routes/salesRepRoute.js';
 import profileRoutes from './routes/profileRoute.js';
+import voucherRoutes from './routes/voucherRoute.js';
 // Uncomment these routes when ready
 // import productRoutes from './routes/productRoute.js';
 // import salesRoutes from './routes/salesRoute.js';
@@ -48,6 +49,7 @@ app.use(cookieParser());
 app.use('/api/', loginRoutes);
 app.use('/api/',salesRepRoutes);
 app.use('/api/',profileRoutes);
+app.use('/api/',voucherRoutes);
 // Uncomment these routes when ready
 // app.use('/api/products', productRoutes);
 // app.use('/api/sales', salesRoutes);
