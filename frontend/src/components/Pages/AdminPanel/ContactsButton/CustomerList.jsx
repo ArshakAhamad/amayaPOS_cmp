@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios'; // Import axios for making HTTP requests
 import { Pencil } from 'lucide-react';
 
 const CustomerList = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [customers, setCustomers] = useState([]); // State to store customer data
+  const [loading, setLoading] = useState(true); // State for loading status
+  const [error, setError] = useState(''); // State for error message
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -12,19 +16,35 @@ const CustomerList = () => {
     setSearchQuery(e.target.value);
   };
 
-  // Sample customer data
-  const customers = [
-    { id: 1, name: 'Walk-In-Customer', phone: '+94712345678', address: 'N/A', status: 'Active' },
-    { id: 2, name: 'John Doe', phone: '+94787654321', address: '123 Main St', status: 'Inactive' },
-    { id: 3, name: 'Jane Smith', phone: '+94711122333', address: '456 Elm St', status: 'Active' },
-  ];
+  // Fetch customer data from the backend
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/customers');
+        if (response.data.success) {
+          setCustomers(response.data.customers);
+        } else {
+          setError('Failed to fetch customers.');
+        }
+      } catch (err) {
+        setError('An error occurred while fetching customer data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
 
   // Filter customers based on search query
   const filteredCustomers = customers.filter((customer) =>
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.phone.includes(searchQuery) ||
-    customer.address.toLowerCase().includes(searchQuery.toLowerCase())
+    customer.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.customer_phone.includes(searchQuery) ||
+    customer.customer_address.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (loading) return <div>Loading...</div>; // Display loading state while fetching data
+  if (error) return <div>{error}</div>; // Display error message if any
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -72,18 +92,18 @@ const CustomerList = () => {
               </thead>
               <tbody>
                 {filteredCustomers.map((customer, index) => (
-                  <tr key={customer.id} className="border-b hover:bg-gray-50 transition">
+                  <tr key={customer.customer_id} className="border-b hover:bg-gray-50 transition">
                     <td className="px-4 py-2">{index + 1}</td>
-                    <td className="px-4 py-2">{customer.name}</td>
-                    <td className="px-4 py-2">{customer.phone}</td>
-                    <td className="px-4 py-2">{customer.address}</td>
+                    <td className="px-4 py-2">{customer.customer_name}</td>
+                    <td className="px-4 py-2">{customer.customer_phone}</td>
+                    <td className="px-4 py-2">{customer.customer_address}</td>
                     <td className="px-4 py-2">
                       <span
                         className={`font-semibold ${
-                          customer.status === 'Active' ? 'text-green-600' : 'text-red-600'
+                          customer.customer_active === 1 ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
-                        {customer.status}
+                        {customer.customer_active === 1 ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-4 py-2">

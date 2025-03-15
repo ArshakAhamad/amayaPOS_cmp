@@ -1,22 +1,23 @@
-import React, { useState } from "react";
-import Switch from "react-switch";
+import React, { useState } from 'react';
+import Switch from 'react-switch';
+import axios from 'axios'; // Added import for axios
 
 const CreateProducts = () => {
   const [productDetails, setProductDetails] = useState({
-    productName: "",
-    barcode: "",
-    category: "",
-    supplier: "",
-    price: "",
-    discount: "",
-    minQuantity: "",
+    productName: '',
+    barcode: '',
+    category: '',
+    supplier: '',
+    price: '',
+    discount: '',
+    minQuantity: '',
     giftVoucher: false,
     file: null,
   });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (type === "checkbox") {
+    if (type === 'checkbox') {
       setProductDetails({
         ...productDetails,
         [name]: checked,
@@ -43,23 +44,60 @@ const CreateProducts = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(productDetails);
+    const formData = new FormData();
+  
+    // Append form data
+    formData.append('productName', productDetails.productName);
+    formData.append('barcode', productDetails.barcode);
+    formData.append('category', productDetails.category);
+    formData.append('supplier', productDetails.supplier);
+    formData.append('price', productDetails.price);
+    formData.append('discount', productDetails.discount);
+    formData.append('minQuantity', productDetails.minQuantity);
+    formData.append('giftVoucher', productDetails.giftVoucher);
+    if (productDetails.file) {
+      formData.append('file', productDetails.file); // Add file to FormData
+    }
+  
+    try {
+      const response = await axios.post('http://localhost:5000/api/products', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Set content type for file upload
+        },
+      });
+  
+      if (response.data.success) {
+        alert('Product created successfully!');
+        setProductDetails({
+          productName: '',
+          barcode: '',
+          category: '',
+          supplier: '',
+          price: '',
+          discount: '',
+          minQuantity: '',
+          giftVoucher: false,
+          file: null,
+        });
+      }
+    } catch (err) {
+      console.error('Error submitting form:', err);
+      alert('Failed to create product');
+    }
   };
-
   return (
     <div className="main-content p-6 flex justify-center items-center min-h-screen">
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-3xl">
-        {/* 🔷 Product Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 🔷 Centered Header */}
+          {/* Product Form Header */}
           <div>
             <h3 className="text-2xl font-semibold text-gray-700">Create Product</h3>
             <p className="text-sm text-gray-500 mt-1">You can create new products from here</p>
           </div>
 
-          <br></br>
+          <br />
 
           {/* File Upload */}
           <div>

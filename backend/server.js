@@ -11,6 +11,8 @@ import loginRoutes from './routes/loginRoute.js';
 import salesRepRoutes from './routes/salesRepRoute.js';
 import profileRoutes from './routes/profileRoute.js';
 import voucherRoutes from './routes/voucherRoute.js';
+import customerRoutes from './routes/customerRoute.js';
+import productRoutes from './routes/productRoute.js';
 // Uncomment these routes when ready
 // import productRoutes from './routes/productRoute.js';
 // import salesRoutes from './routes/salesRoute.js';
@@ -50,6 +52,8 @@ app.use('/api/', loginRoutes);
 app.use('/api/',salesRepRoutes);
 app.use('/api/',profileRoutes);
 app.use('/api/',voucherRoutes);
+app.use('/api/',customerRoutes);
+app.use('/api/',productRoutes);
 // Uncomment these routes when ready
 // app.use('/api/products', productRoutes);
 // app.use('/api/sales', salesRoutes);
