@@ -82,4 +82,49 @@ router.post('/products', upload.single('file'), async (req, res) => {
   }
 });
 
+// GET /api/products - Fetch all products
+router.get('/products', async (req, res) => {
+  try {
+    const [products] = await pool.execute(`
+      SELECT 
+        id,
+        product_name,
+        barcode,
+        category,
+        supplier,
+        price,
+        discount,
+        min_quantity,
+        gift_voucher,
+        image_path,
+        created_at,
+        last_cost,
+        avg_cost,
+        created_by,
+        status
+      FROM products
+    `);
+
+    if (products.length === 0) {
+      return res.status(404).json({ success: false, message: 'No products found.' });
+    }
+
+    // Parse numeric fields as numbers
+    const parsedProducts = products.map((product) => ({
+      ...product,
+      price: parseFloat(product.price),
+      discount: parseFloat(product.discount),
+      last_cost: product.last_cost ? parseFloat(product.last_cost) : null,
+      avg_cost: product.avg_cost ? parseFloat(product.avg_cost) : null,
+    }));
+
+    res.status(200).json({
+      success: true,
+      products: parsedProducts,
+    });
+  } catch (err) {
+    console.error('Error fetching products:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 export default router;

@@ -1,41 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Pencil } from 'lucide-react';
+import axios from 'axios';
 
 const ProductList = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      product: 'Mascara',
-      barcode: 'BC-001',
-      category: 'Cotton',
-      type: 'Voucher',
-      price: 1250.0,
-      discount: 0.0,
-      lastCost: 1000.0,
-      avgCost: 1000.0,
-      createdDate: '2024-05-06 15:51:35',
-      createdBy: 'Admin',
-      status: 'Active',
-    },
-    {
-      id: 2,
-      product: 'Lipstick',
-      barcode: 'BC-002',
-      category: 'Cosmetics',
-      type: 'Voucher',
-      price: 1500.0,
-      discount: 10.0,
-      lastCost: 1200.0,
-      avgCost: 1300.0,
-      createdDate: '2024-05-07 10:15:20',
-      createdBy: 'Admin',
-      status: 'Inactive',
-    },
-    // Add more products here
-  ]);
+  // Fetch products from the backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/products');
+        if (response.data.success) {
+          setProducts(response.data.products);
+        } else {
+          setError('Failed to fetch products');
+        }
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError('Server error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -74,38 +76,38 @@ const ProductList = () => {
                   <th className="px-4 py-2 text-left">Created Date</th>
                   <th className="px-4 py-2 text-left">Created By</th>
                   <th className="px-4 py-2 text-left">Status</th>
-                  <th className="px-4 py-2 text-left">Actions</th> {/* Added Actions Column */}
+                  <th className="px-4 py-2 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {products.map((product, index) => (
-                  <tr key={product.id} className="border-b hover:bg-gray-50 transition">
-                    <td className="px-4 py-2">{index + 1}</td>
-                    <td className="px-4 py-2">{product.product}</td>
-                    <td className="px-4 py-2">{product.barcode}</td>
-                    <td className="px-4 py-2">{product.category}</td>
-                    <td className="px-4 py-2">{product.price.toFixed(2)}</td>
-                    <td className="px-4 py-2">{product.discount.toFixed(2)}</td>
-                    <td className="px-4 py-2">{product.lastCost.toFixed(2)}</td>
-                    <td className="px-4 py-2">{product.avgCost.toFixed(2)}</td>
-                    <td className="px-4 py-2">{product.createdDate}</td>
-                    <td className="px-4 py-2">{product.createdBy}</td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={`font-semibold ${
-                          product.status === 'Active' ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {product.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <button className="text-blue-600 hover:text-blue-800 transition">
-                        <Pencil width={18} height={18} /> {/* Edit Icon */}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+              {products.map((product, index) => (
+  <tr key={product.id} className="border-b hover:bg-gray-50 transition">
+    <td className="px-4 py-2">{index + 1}</td>
+    <td className="px-4 py-2">{product.product_name}</td>
+    <td className="px-4 py-2">{product.barcode}</td>
+    <td className="px-4 py-2">{product.category}</td>
+    <td className="px-4 py-2">{product.price?.toFixed(2)}</td>
+    <td className="px-4 py-2">{product.discount?.toFixed(2)}</td>
+    <td className="px-4 py-2">{product.last_cost?.toFixed(2) ?? 'N/A'}</td>
+    <td className="px-4 py-2">{product.avg_cost?.toFixed(2) ?? 'N/A'}</td>
+    <td className="px-4 py-2">{product.created_at}</td>
+    <td className="px-4 py-2">{product.created_by || 'Admin'}</td>
+    <td className="px-4 py-2">
+      <span
+        className={`font-semibold ${
+          product.status === 'Active' ? 'text-green-600' : 'text-red-600'
+        }`}
+      >
+        {product.status || 'Active'}
+      </span>
+    </td>
+    <td className="px-4 py-2">
+      <button className="text-blue-600 hover:text-blue-800 transition">
+        <Pencil width={18} height={18} /> {/* Edit Icon */}
+      </button>
+    </td>
+  </tr>
+))}
               </tbody>
             </table>
           </div>

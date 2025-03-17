@@ -1,20 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Pencil } from "lucide-react";
 
 const StoreList = () => {
-  const [stores, setStores] = useState([
-    { id: 1, name: "Store 1", type: "Factory", description: "Main Factory", createdDate: "2024-04-21 16:44:14", createdBy: "Admin", status: "Active" },
-    { id: 2, name: "Store 2", type: "Store", description: "Retail Store", createdDate: "2024-04-21 16:44:14", createdBy: "Admin", status: "Active" },
-    { id: 3, name: "Store 3", type: "Store", description: "Retail Store", createdDate: "2024-04-21 16:44:14", createdBy: "Admin", status: "Inactive" },
-    { id: 4, name: "Store 4", type: "Dealer Store", description: "Dealer Distribution", createdDate: "2024-04-21 16:44:14", createdBy: "Admin", status: "Active" },
-  ]);
-
+  const [stores, setStores] = useState([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+  // Fetch stores from the backend
+  useEffect(() => {
+    const fetchStores = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch("http://localhost:5000/api/stores");
+        const data = await response.json();
+        if (data.success) {
+          setStores(data.stores);
+        } else {
+          setError(data.message || "Failed to fetch stores.");
+        }
+      } catch (err) {
+        setError("Error fetching stores. Please try again.");
+        console.error("Error fetching stores:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStores();
+  }, []);
+
+  // Filter stores based on search query
   const filteredStores = stores.filter(
     (store) =>
       store.name.toLowerCase().includes(search.toLowerCase()) ||
       store.type.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Pagination Logic
+  const indexOfLastStore = currentPage * itemsPerPage;
+  const indexOfFirstStore = indexOfLastStore - itemsPerPage;
+  const currentStores = filteredStores.slice(indexOfFirstStore, indexOfLastStore);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Handling pagination button disabling
+  const totalPages = Math.ceil(filteredStores.length / itemsPerPage);
+  const isFirstPage = currentPage === 1;
+  const isLastPage = currentPage === totalPages;
 
   return (
     <div className="main-content p-6">
@@ -31,6 +67,10 @@ const StoreList = () => {
           />
         </div>
 
+        {/* 🔷 Loading and Error Messages */}
+        {loading && <p className="text-center text-blue-600">Loading...</p>}
+        {error && <p className="text-center text-red-600">{error}</p>}
+
         {/* 🔷 Stores Table */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
@@ -43,13 +83,13 @@ const StoreList = () => {
                 <th className="px-4 py-3 text-left w-[20%]">Created Date</th>
                 <th className="px-4 py-3 text-left w-[15%]">Created By</th>
                 <th className="px-4 py-3 text-center w-[10%]">Status</th>
-                <th className="px-4 py-3 text-center w-[10%]">Actions</th> {/* Added Actions Column */}
+                <th className="px-4 py-3 text-center w-[10%]">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredStores.map((store, index) => (
+              {currentStores.map((store, index) => (
                 <tr key={store.id} className="border-b hover:bg-gray-50 transition">
-                  <td className="px-4 py-3">{index + 1}</td>
+                  <td className="px-4 py-3">{index + 1 + indexOfFirstStore}</td>
                   <td className="px-4 py-3">{store.name}</td>
                   <td className="px-4 py-3">{store.type}</td>
                   <td className="px-4 py-3">{store.description}</td>
@@ -68,7 +108,7 @@ const StoreList = () => {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button className="text-blue-600 hover:text-blue-800 transition">
-                      <Pencil width={18} height={18} /> {/* Edit Icon */}
+                      <Pencil width={18} height={18} />
                     </button>
                   </td>
                 </tr>
@@ -80,13 +120,22 @@ const StoreList = () => {
         {/* 🔷 Pagination */}
         <div className="flex justify-between items-center mt-6">
           <p className="text-gray-600">
-            Showing 1 to {filteredStores.length} of {stores.length} entries
+            Showing {indexOfFirstStore + 1} to {Math.min(indexOfLastStore, filteredStores.length)}{" "}
+            of {filteredStores.length} entries
           </p>
           <div className="flex gap-2">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            <button
+              onClick={() => paginate(currentPage - 1)}
+              disabled={isFirstPage}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300"
+            >
               Previous
             </button>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            <button
+              onClick={() => paginate(currentPage + 1)}
+              disabled={isLastPage}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300"
+            >
               Next
             </button>
           </div>

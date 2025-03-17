@@ -15,25 +15,41 @@ const CreateStore = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(storeDetails); // Handle form submission logic
+
+    try {
+      const response = await fetch('http://localhost:5000/api/stores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(storeDetails),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Store created successfully!');
+        setStoreDetails({ storeName: '', description: '', storeType: '' }); // Reset form
+      } else {
+        alert('Failed to create store: ' + data.message);
+      }
+    } catch (err) {
+      console.error('Error creating store:', err);
+      alert('Server error. Please try again.');
+    }
   };
 
   return (
     <div className="main-content p-6 flex justify-center items-center min-h-screen">
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-3xl">
-        
-       
-        {/* 🔷 Form Section */}
         <form onSubmit={handleSubmit} className="space-y-6">
-           {/* 🔷 Centered Header */}
-        <div className="text-center mb-6">
-          <h3 className="text-2xl font-semibold text-gray-700">Store Setup</h3>
-          <p className="text-sm text-gray-500 mt-1">You can create new stores from here</p>
-        </div>
-<br></br>
-          
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-semibold text-gray-700">Store Setup</h3>
+            <p className="text-sm text-gray-500 mt-1">You can create new stores from here</p>
+          </div>
+          <br />
+
           {/* Store Name */}
           <div>
             <label htmlFor="storeName" className="block text-sm font-medium text-gray-700">
@@ -79,7 +95,7 @@ const CreateStore = () => {
               <option value="">Select Store Type</option>
               <option value="Factory">Factory</option>
               <option value="Store">Store</option>
-              <option value="Dealer">Dealer Store</option>
+              <option value="Dealer Store">Dealer Store</option> {/* Updated */}
             </select>
           </div>
 
@@ -98,7 +114,6 @@ const CreateStore = () => {
               Save
             </button>
           </div>
-          
         </form>
       </div>
     </div>

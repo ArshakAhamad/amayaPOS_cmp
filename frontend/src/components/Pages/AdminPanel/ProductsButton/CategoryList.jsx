@@ -1,18 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios"; // Import axios for API calls
 import { Pencil } from "lucide-react";
 
 const CategoryList = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false); // Loading state for data fetching
 
-  const categories = [
-    { id: 1, category: "Category 1", description: "Description 1", createdDate: "2024-04-21 16:44:14", createdBy: "Admin", status: "Active" },
-    { id: 2, category: "Category 2", description: "Description 2", createdDate: "2024-04-21 16:44:14", createdBy: "Admin", status: "Inactive" },
-    { id: 3, category: "Category 3", description: "Description 3", createdDate: "2024-04-21 16:44:14", createdBy: "Admin", status: "Active" },
-    { id: 4, category: "Category 4", description: "Description 4", createdDate: "2024-04-21 16:44:14", createdBy: "Admin", status: "Inactive" },
-  ];
+  // Fetch categories from the backend API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoading(true); // Set loading to true while fetching
+      try {
+        const response = await axios.get("http://localhost:5000/api/categories");
+        setCategories(response.data.categories); // Set the fetched categories to state
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setLoading(false); // Set loading to false when the fetch is done
+      }
+    };
+
+    fetchCategories();
+  }, []); // Empty dependency array ensures it only runs once after the component mounts
 
   const filteredCategories = categories.filter((category) =>
-    category.category.toLowerCase().includes(searchQuery.toLowerCase())
+    category.category_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -32,44 +45,48 @@ const CategoryList = () => {
 
         {/* 🔷 Table Section */}
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
-            <thead className="bg-gray-100 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left">No</th>
-                <th className="px-4 py-3 text-left">Category</th>
-                <th className="px-4 py-3 text-left">Description</th>
-                <th className="px-4 py-3 text-left">Created Date</th>
-                <th className="px-4 py-3 text-left">Created By</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Actions</th> {/* Added Actions Column */}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCategories.map((category, index) => (
-                <tr key={category.id} className="border-b hover:bg-gray-50 transition">
-                  <td className="px-4 py-3">{index + 1}</td>
-                  <td className="px-4 py-3">{category.category}</td>
-                  <td className="px-4 py-3">{category.description}</td>
-                  <td className="px-4 py-3">{category.createdDate}</td>
-                  <td className="px-4 py-3">{category.createdBy}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`font-semibold ${
-                        category.status === "Active" ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {category.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button className="text-blue-600 hover:text-blue-800 transition">
-                      <Pencil width={18} height={18} /> {/* Edit Icon */}
-                    </button>
-                  </td>
+          {loading ? (
+            <div className="text-center py-6">Loading categories...</div>
+          ) : (
+            <table className="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
+              <thead className="bg-gray-100 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left">No</th>
+                  <th className="px-4 py-3 text-left">Category</th>
+                  <th className="px-4 py-3 text-left">Description</th>
+                  <th className="px-4 py-3 text-left">Created Date</th>
+                  <th className="px-4 py-3 text-left">Created By</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">Actions</th> {/* Added Actions Column */}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredCategories.map((category, index) => (
+                  <tr key={category.id} className="border-b hover:bg-gray-50 transition">
+                    <td className="px-4 py-3">{index + 1}</td>
+                    <td className="px-4 py-3">{category.category_name}</td>
+                    <td className="px-4 py-3">{category.description}</td>
+                    <td className="px-4 py-3">{category.created_at}</td>
+                    <td className="px-4 py-3">{category.created_by}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`font-semibold ${
+                          category.status === "Active" ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {category.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button className="text-blue-600 hover:text-blue-800 transition">
+                        <Pencil width={18} height={18} /> {/* Edit Icon */}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* 🔷 Export Buttons */}

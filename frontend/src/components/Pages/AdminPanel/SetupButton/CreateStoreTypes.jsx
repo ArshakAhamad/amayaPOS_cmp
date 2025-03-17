@@ -14,10 +14,29 @@ const CreateStoreTypes = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(storeTypeDetails);
-    // Handle your store type creation logic here
+  
+    try {
+      const response = await fetch('http://localhost:5000/api/store-types', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(storeTypeDetails),
+      });
+  
+      const data = await response.json();
+      if (data.success) {
+        alert('Store type created successfully!');
+        setStoreTypeDetails({ storeTypeName: '', description: '' }); // Reset form
+      } else {
+        alert('Failed to create store type: ' + data.message);
+      }
+    } catch (err) {
+      console.error('Error creating store type:', err);
+      alert('Server error. Please try again.');
+    }
   };
 
   return (

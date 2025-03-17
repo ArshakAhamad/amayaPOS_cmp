@@ -13,6 +13,10 @@ import profileRoutes from './routes/profileRoute.js';
 import voucherRoutes from './routes/voucherRoute.js';
 import customerRoutes from './routes/customerRoute.js';
 import productRoutes from './routes/productRoute.js';
+import categoryRoutes from './routes/categoryRoute.js';
+import SupplierRoutes from './routes/SupplierRoute.js';
+import StoreRoutes from './routes/storeRoute.js';
+import storeTypeRoutes from './routes/storeTypeRoute.js';
 // Uncomment these routes when ready
 // import productRoutes from './routes/productRoute.js';
 // import salesRoutes from './routes/salesRoute.js';
@@ -54,6 +58,10 @@ app.use('/api/',profileRoutes);
 app.use('/api/',voucherRoutes);
 app.use('/api/',customerRoutes);
 app.use('/api/',productRoutes);
+app.use('/api/',categoryRoutes);
+app.use('/api/',SupplierRoutes);
+app.use('/api/',StoreRoutes);
+app.use('/api/',storeTypeRoutes);
 // Uncomment these routes when ready
 // app.use('/api/products', productRoutes);
 // app.use('/api/sales', salesRoutes);
