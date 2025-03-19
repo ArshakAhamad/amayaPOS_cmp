@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Popup from "reactjs-popup";
 import { motion } from "framer-motion";
 import "reactjs-popup/dist/index.css";
@@ -9,10 +9,35 @@ const PosPay = () => {
     { id: "0006", name: "B (Barcode)", price: 80.0, quantity: 1, discount: 0 },
   ]);
 
-  const [selectedProduct, setSelectedProduct] = useState(""); // ✅ State for dropdown selection
+  const [selectedProduct, setSelectedProduct] = useState("");
   const [isPopupOpen, setPopupOpen] = useState(false);
+  const [products, setProducts] = useState([]);
 
-  // ✅ Update quantity & recalculate total price
+  // Fetch products from the backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/products');
+        const data = await response.json();
+        if (data.success) {
+          setProducts(data.products);
+        } else {
+          console.error('Failed to fetch products:', data.message);
+        }
+      } catch (err) {
+        console.error('Error fetching products:', err);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Function to calculate the total price of the cart
+  const calculateTotal = () => {
+    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2);
+  };
+
+  // Handle quantity change
   const handleQuantityChange = (index, value) => {
     setCart((prevCart) =>
       prevCart.map((item, i) =>
@@ -21,30 +46,26 @@ const PosPay = () => {
     );
   };
 
-  // ✅ Handle product selection
+  // Handle product selection
   const handleProductSelect = (event) => {
-    const selectedValue = event.target.value;
+    const selectedValue = event.target.value; // This will be the product ID
     setSelectedProduct(selectedValue);
 
-    // Check if product is already in the cart
-    const existingProduct = cart.find((item) => item.id === selectedValue);
+    // Find the selected product in the products array
+    const selectedProduct = products.find((product) => product.id === selectedValue);
 
-    if (!existingProduct) {
-      const newProduct =
-        selectedValue === "Product1"
-          ? { id: "P1", name: "Product 1", price: 150.0, quantity: 1, discount: 0 }
-          : selectedValue === "Product2"
-          ? { id: "P2", name: "Product 2", price: 200.0, quantity: 1, discount: 0 }
-          : null;
+    if (selectedProduct) {
+      // Add the selected product to the cart
+      const newProduct = {
+        id: selectedProduct.id,
+        name: selectedProduct.name,
+        price: selectedProduct.price,
+        quantity: 1,
+        discount: 0,
+      };
 
-      if (newProduct) {
-        setCart((prevCart) => [...prevCart, newProduct]);
-      }
+      setCart((prevCart) => [...prevCart, newProduct]);
     }
-  };
-
-  const calculateTotal = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity - item.discount, 0).toFixed(2);
   };
 
   return (
@@ -52,23 +73,25 @@ const PosPay = () => {
       <div className="grid grid-cols-3 gap-4">
         {/* Left Side (Product Selection) */}
         <div>
-        <div className="barcode-select-container">
-  <input
-    type="text"
-    placeholder="Alt + A (Barcode)"
-    className="p-3 border border-gray-300 rounded-lg w-64"
-  />
-  <select
-    className="p-3 border border-gray-300 rounded-lg w-full sm:w-[250px]"
-    onChange={handleProductSelect}
-    value={selectedProduct}
-  >
-    <option value="">Select Product</option>
-    <option value="Product1">Product 1</option>
-    <option value="Product2">Product 2</option>
-  </select>
-</div>
-
+          <div className="barcode-select-container">
+            <input
+              type="text"
+              placeholder="Alt + A (Barcode)"
+              className="p-3 border border-gray-300 rounded-lg w-64"
+            />
+            <select
+              className="p-3 border border-gray-300 rounded-lg w-full sm:w-[250px]"
+              onChange={handleProductSelect}
+              value={selectedProduct}
+            >
+              <option value="">Select Product</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name}00{product.id}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Right Side (POS Table) */}
@@ -103,6 +126,7 @@ const PosPay = () => {
           </table>
         </div>
 
+        {/* Right Section (Gift Card and Payment) */}
         <div className="right-section">
           <div className="gift-card-section p-6 bg-black text-white rounded-lg shadow-lg border border-gray-700">
             <h2 className="text-lg font-bold border-b border-gray-600 pb-2">AMAYA COLLECTION</h2>
@@ -164,6 +188,8 @@ const PosPay = () => {
           </div>
         </div>
       </div>
+
+      {/* Popup for Payment */}
       <Popup
         open={isPopupOpen}
         closeOnDocumentClick
@@ -200,12 +226,12 @@ const PosPay = () => {
             <h3 className="text-xl font-semibold mb-4">PAY</h3>
 
             <div className="flex flex-col space-y-4">
-            <label htmlFor="username">Customer Phone : </label>
+              <label htmlFor="username">Customer Phone : </label>
               <input type="text" placeholder="Enter PhoneNo" className="w-full p-3 border border-gray-300 rounded-lg" /> <br></br>
               <label htmlFor="username">Cash Payment (C) : </label>
               <input type="number" placeholder="Enter Cash" className="w-full p-3 border border-gray-300 rounded-lg" /><br></br>
-              <label htmlFor="username">Card Payment : </label> 
-              <input type="number" placeholder="" className="w-full p-3 border border-gray-300 rounded-lg" /><br></br> 
+              <label htmlFor="username">Card Payment : </label>
+              <input type="number" placeholder="" className="w-full p-3 border border-gray-300 rounded-lg" /><br></br>
               <br></br>
               <input type="number" placeholder="" className="w-full p-3 border border-gray-300 rounded-lg" /><br></br>
               <label htmlFor="username">Gift Voucher : </label>
