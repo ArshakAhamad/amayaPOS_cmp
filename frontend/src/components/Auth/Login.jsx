@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 import logo from "/logo.png";
 
-const Login = () => {
+const Login = ({ setIsAuthenticated, setUserRole }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -16,14 +18,26 @@ const Login = () => {
         password,
       });
 
+      console.log("API Response:", response.data); // Debug: Log the API response
+
       if (response.data.success) {
-        // Save the token in localStorage or sessionStorage
+        // Save the token in localStorage
         localStorage.setItem("token", response.data.token);
 
-        // Redirect to dashboard or another page
-        window.location.href = "/dashboard"; // Adjust the redirect URL as needed
+        // Extract the role from the user object
+        const role = response.data.user.role; // Ensure the backend includes the role field
+
+        // Set authentication status and user role
+        setIsAuthenticated(true);
+        setUserRole(role);
+
+        console.log("User Role:", role); // Debug: Log the user role
+        console.log("Navigating to:", role === "Admin" ? "/AdminPanel" : "/CashierPanel"); // Debug: Log the navigation path
+
+        // Redirect based on role
+        navigate(role === "Admin" ? "/AdminPanel" : "/CashierPanel");
       } else {
-        setError(response.data.message);
+        setError(response.data.message); // Set error message from the API response
       }
     } catch (err) {
       setError("An error occurred during login. Please try again.");

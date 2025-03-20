@@ -114,19 +114,6 @@ const Topbar = ({ toggleSidebar, setUserRole, userRole, isSidebarOpen }) => {
                 Profile
               </div>
               
-              {userRole === "Admin" ? (
-                <div className="dropdown-item" onClick={handleCashierPanelClick}>
-                  CashierPanel
-                </div>
-              ) : (
-                <div className="dropdown-item" onClick={handleAdminPanelClick}>
-                  AdminPanel
-                </div>
-                
-              )}
-              <div className="dropdown-item" onClick={handleLoginClick}>
-                LogIn
-              </div>
                <div className="dropdown-item" onClick={handleLogoutClick}>
                 Logout
               </div>

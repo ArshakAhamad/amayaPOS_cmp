@@ -4,28 +4,25 @@ import { motion } from "framer-motion";
 import "reactjs-popup/dist/index.css";
 
 const PosPay = () => {
-  const [cart, setCart] = useState([
-    { id: "0003", name: "A (Barcode)", price: 120.0, quantity: 1, discount: 0 },
-    { id: "0006", name: "B (Barcode)", price: 80.0, quantity: 1, discount: 0 },
-  ]);
-
-  const [selectedProduct, setSelectedProduct] = useState("");
+  const [cart, setCart] = useState([]); // Initialize cart as empty
+  const [selectedProduct, setSelectedProduct] = useState(""); // Currently selected product
   const [isPopupOpen, setPopupOpen] = useState(false);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState([]); // List of products from the backend
 
   // Fetch products from the backend
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/products');
+        const response = await fetch("http://localhost:5000/api/products");
         const data = await response.json();
         if (data.success) {
-          setProducts(data.products);
+          setProducts(data.products); // Populate the products state
+          console.log("Fetched Products:", data.products); // Debugging: Log fetched products
         } else {
-          console.error('Failed to fetch products:', data.message);
+          console.error("Failed to fetch products:", data.message);
         }
       } catch (err) {
-        console.error('Error fetching products:', err);
+        console.error("Error fetching products:", err);
       }
     };
 
@@ -34,14 +31,14 @@ const PosPay = () => {
 
   // Function to calculate the total price of the cart
   const calculateTotal = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2);
+    return cart.reduce((sum, product) => sum + product.price * product.quantity, 0).toFixed(2);
   };
 
   // Handle quantity change
   const handleQuantityChange = (index, value) => {
     setCart((prevCart) =>
-      prevCart.map((item, i) =>
-        i === index ? { ...item, quantity: Math.max(1, value) } : item
+      prevCart.map((product, i) =>
+        i === index ? { ...product, quantity: Math.max(1, value) } : product
       )
     );
   };
@@ -52,19 +49,29 @@ const PosPay = () => {
     setSelectedProduct(selectedValue);
 
     // Find the selected product in the products array
-    const selectedProduct = products.find((product) => product.id === selectedValue);
+    const selectedProduct = products.find((product) => product.id === parseInt(selectedValue));
 
     if (selectedProduct) {
-      // Add the selected product to the cart
-      const newProduct = {
-        id: selectedProduct.id,
-        name: selectedProduct.name,
-        price: selectedProduct.price,
-        quantity: 1,
-        discount: 0,
-      };
+      // Check if the product is already in the cart
+      const isProductInCart = cart.some((product) => product.id === selectedProduct.id);
 
-      setCart((prevCart) => [...prevCart, newProduct]);
+      if (!isProductInCart) {
+        // Add the selected product to the cart
+        const newProduct = {
+          id: selectedProduct.id,
+          name: selectedProduct.product_name, // Use product_name from the database
+          price: selectedProduct.price,
+          quantity: 1,
+          discount: 0,
+        };
+
+        // Debugging: Check if the product is added to the cart
+        console.log("New Product Added to Cart:", newProduct);
+
+        setCart((prevCart) => [...prevCart, newProduct]);
+      } else {
+        alert("Product is already in the cart.");
+      }
     }
   };
 
@@ -87,7 +94,7 @@ const PosPay = () => {
               <option value="">Select Product</option>
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
-                  {product.name}00{product.id}
+                   00{product.id}
                 </option>
               ))}
             </select>
@@ -106,22 +113,28 @@ const PosPay = () => {
               </tr>
             </thead>
             <tbody>
-              {cart.map((item, index) => (
-                <tr key={item.id} className="border-b border-gray-500">
-                  <td className="px-4 py-3">{item.name}</td>
-                  <td className="px-4 py-3">{item.price.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-center">
-                    <input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => handleQuantityChange(index, parseInt(e.target.value))}
-                      className="w-20 p-2 text-center border rounded-md bg-white text-black"
-                    />
-                  </td>
-                  <td className="px-4 py-3">{(item.price * item.quantity).toFixed(2)}</td>
+              {cart.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-4">No items in the cart</td>
                 </tr>
-              ))}
+              ) : (
+                cart.map((product, index) => (
+                  <tr key={product.id} className="border-b border-gray-500">
+                    <td className="px-4 py-3">{product.name}</td>
+                    <td className="px-4 py-3">{product.price.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="number"
+                        min="1"
+                        value={product.quantity}
+                        onChange={(e) => handleQuantityChange(index, parseInt(e.target.value))}
+                        className="w-20 p-2 text-center border rounded-md bg-white text-black"
+                      />
+                    </td>
+                    <td className="px-4 py-3">{(product.price * product.quantity).toFixed(2)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -228,12 +241,16 @@ const PosPay = () => {
             <div className="flex flex-col space-y-4">
               <label htmlFor="username">Customer Phone : </label>
               <input type="text" placeholder="Enter PhoneNo" className="w-full p-3 border border-gray-300 rounded-lg" /> <br></br>
+              <br></br>
               <label htmlFor="username">Cash Payment (C) : </label>
               <input type="number" placeholder="Enter Cash" className="w-full p-3 border border-gray-300 rounded-lg" /><br></br>
+              <br></br>
               <label htmlFor="username">Card Payment : </label>
+              <input type="number" placeholder="Enter CardNo" className="w-full p-3 border border-gray-300 rounded-lg" /><br></br>
+              <br></br>
+              <label htmlFor="username">Total Amount : </label>
               <input type="number" placeholder="" className="w-full p-3 border border-gray-300 rounded-lg" /><br></br>
               <br></br>
-              <input type="number" placeholder="" className="w-full p-3 border border-gray-300 rounded-lg" /><br></br>
               <label htmlFor="username">Gift Voucher : </label>
               <input type="number" placeholder="VoucherID" className="w-full p-3 border border-gray-300 rounded-lg" /><br></br>
             </div>

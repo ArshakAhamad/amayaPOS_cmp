@@ -59,13 +59,17 @@ import CashierPosPay from './components/Pages/CashierPanel/SalesButton/PosPay';
 import { Logout } from './components/Auth/Logout';
 import SupplierHY from './components/Pages/AdminPanel/SupplierButton/SupplierBills';
 
-
-
-
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [userRole, setUserRole] = useState("Admin"); // Track user role (Admin/Cashier)
+  const [userRole, setUserRole] = useState(null); // Track user role (Admin/Cashier)
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Track authentication status
 
+    // Debug: Log state changes
+    React.useEffect(() => {
+      console.log("isAuthenticated:", isAuthenticated);
+      console.log("userRole:", userRole);
+    }, [isAuthenticated, userRole]);
+    
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
@@ -73,20 +77,40 @@ function App() {
   return (
     <Router>
       <Routes>
-      <Route path="Login" element={<Login />} />
-      <Route path="Logout" element={<Logout />} />
-        {/* Redirect to the correct panel based on userRole */}
-        <Route path="/" element={<Navigate to={userRole === "Admin" ? "/AdminPanel" : "/CashierPanel"} replace />} />
+        {/* Login Route */}
+        <Route
+          path="/Login"
+          element={<Login setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />}
+        />
+
+        {/* Logout Route */}
+        <Route
+          path="/Logout"
+          element={<Logout setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />}
+        />
+
+        {/* Redirect to Login if not authenticated, otherwise redirect to the correct panel */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Navigate to={userRole === "Admin" ? "/AdminPanel" : "/CashierPanel"} replace />
+            ) : (
+              <Navigate to="/Login" replace />
+            )
+          }
+        />
 
         {/* Admin Panel Routes */}
         <Route
           path="/AdminPanel/*"
-          key={userRole}
-          element={userRole === "Admin" ? (
-            <AdminLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} setUserRole={setUserRole} />
-          ) : (
-            <Navigate to="/CashierPanel" replace />
-          )}
+          element={
+            isAuthenticated && userRole === "Admin" ? (
+              <AdminLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} setUserRole={setUserRole} />
+            ) : (
+              <Navigate to="/Login" replace />
+            )
+          }
         >
           <Route index element={<Dashboard />} />
           <Route path="CashInHand" element={<CashInHand />} />
@@ -125,12 +149,13 @@ function App() {
         {/* Cashier Panel Routes */}
         <Route
           path="/CashierPanel/*"
-          key={userRole}
-          element={userRole === "Cashier" ? (
-            <CashierLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} setUserRole={setUserRole} />
-          ) : (
-            <Navigate to="/AdminPanel" replace />
-          )}
+          element={
+            isAuthenticated && userRole === "Cashier" ? (
+              <CashierLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} setUserRole={setUserRole} />
+            ) : (
+              <Navigate to="/Login" replace />
+            )
+          }
         >
           <Route index element={<CashierDashboard />} />
           <Route path="CashInHand" element={<CashierCashInHand />} />
@@ -157,14 +182,14 @@ function App() {
   );
 }
 
-
+// Admin Layout Component
 const AdminLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => (
   <div className="flex">
     <Sidepanel isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
     <div className="main-content flex-1 transition-all duration-300">
       <Topbar
         toggleSidebar={toggleSidebar}
-        setUserRole={setUserRole} // Pass setUserRole to Topbar
+        setUserRole={setUserRole}
         userRole="Admin"
         isSidebarOpen={isSidebarOpen}
       />
@@ -176,13 +201,14 @@ const AdminLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => (
   </div>
 );
 
+// Cashier Layout Component
 const CashierLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => (
   <div className="flex">
     <SidebarCashier isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
     <div className={`main-content transition-all duration-300 ${isSidebarOpen ? 'ml-64 w-[calc(100%-16rem)]' : 'ml-20 w-[calc(100%-5rem)]'}`}>
       <Topbar
         toggleSidebar={toggleSidebar}
-        setUserRole={setUserRole} // Pass setUserRole to Topbar
+        setUserRole={setUserRole}
         userRole="Cashier"
         isSidebarOpen={isSidebarOpen}
       />
@@ -193,6 +219,5 @@ const CashierLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => (
     </div>
   </div>
 );
-
 
 export default App;

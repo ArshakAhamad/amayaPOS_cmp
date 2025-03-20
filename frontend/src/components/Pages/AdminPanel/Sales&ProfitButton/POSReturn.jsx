@@ -1,17 +1,77 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const POSReturn = () => {
-  const [products, setProducts] = useState([
-    { date: "2024-05-06", product: "Overcoat Blouse", unitPrice: 1590, quantity: 1, total: 1590, stock: 6, status: "Returned & Settled" },
-    { date: "2024-05-05", product: "T-SHIRT SL Red", unitPrice: 1190, quantity: 1, total: 1190, stock: 6, status: "Returned & Settled" },
-  ]);
+  const [products, setProducts] = useState([]); // State to store fetched products
+  const [selectedProduct, setSelectedProduct] = useState(""); // State to store selected product ID
+  const [cart, setCart] = useState([]); // State to store selected products for return
 
-  const [selectedProduct, setSelectedProduct] = useState("");
+  // Fetch products from the backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/products"); // Replace with your API endpoint
+        const data = await response.json();
+        if (data.success) {
+          setProducts(data.products); // Populate the products state
+          console.log("Fetched Products:", data.products); // Debugging: Log fetched products
+        } else {
+          console.error("Failed to fetch products:", data.message);
+        }
+      } catch (err) {
+        console.error("Error fetching products:", err);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Handle product selection
+  const handleProductSelect = (event) => {
+    const selectedValue = event.target.value; // This will be the product ID
+    setSelectedProduct(selectedValue);
+
+    // Find the selected product in the products array
+    const selectedProduct = products.find((product) => product.id === parseInt(selectedValue));
+
+    if (selectedProduct) {
+      // Check if the product is already in the cart
+      const isProductInCart = cart.some((product) => product.id === selectedProduct.id);
+
+      if (!isProductInCart) {
+        // Add the selected product to the cart
+        const newProduct = {
+          id: selectedProduct.id,
+          name: selectedProduct.product_name,
+          price: selectedProduct.price,
+          quantity: 1,
+          status: "Pending Return",
+        };
+
+        // Debugging: Check if the product is added to the cart
+        console.log("New Product Added to Cart:", newProduct);
+
+        setCart((prevCart) => [...prevCart, newProduct]);
+      } else {
+        alert("Product is already in the cart.");
+      }
+    }
+  };
+
+  // Handle quantity change
+  const handleQuantityChange = (index, value) => {
+    setCart((prevCart) =>
+      prevCart.map((product, i) =>
+        i === index ? { ...product, quantity: Math.max(1, value) } : product
+      )
+    );
+  };
+
+  // Calculate total amount
+  const totalAmount = cart.reduce((sum, product) => sum + product.price * product.quantity, 0);
 
   return (
     <div className="main-content p-6">
       <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
-        
         {/* 🔷 Input Controls */}
         <div className="barcode-select-container">
           <input
@@ -21,12 +81,15 @@ const POSReturn = () => {
           />
           <select
             className="p-3 border border-gray-300 rounded-lg w-full sm:w-[250px]"
-            onChange={(e) => setSelectedProduct(e.target.value)}
+            onChange={handleProductSelect}
             value={selectedProduct}
           >
             <option value="">Select Product</option>
-            <option value="product1">Product 1</option>
-            <option value="product2">Product 2</option>
+            {products.map((product) => (
+              <option key={product.id} value={product.id}>
+                00{product.id}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -45,17 +108,23 @@ const POSReturn = () => {
               </tr>
             </thead>
             <tbody>
-              {products.length > 0 ? (
-                products.map((product, index) => (
+              {cart.length > 0 ? (
+                cart.map((product, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 text-red-600 font-semibold">{product.date}</td>
-                    <td className="px-4 py-3">{product.product}</td>
-                    <td className="px-4 py-3 text-right">{product.unitPrice.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-center">{product.quantity}</td>
-                    <td className="px-4 py-3 font-bold text-red-500 text-right">{product.total.toLocaleString()}</td>
-                    <td className={`px-4 py-3 text-center font-semibold ${product.stock < 5 ? 'text-red-600' : 'text-gray-700'}`}>
-                      {product.stock.toFixed(1)}
+                    <td className="px-4 py-3 text-red-600 font-semibold">{new Date().toISOString().split("T")[0]}</td>
+                    <td className="px-4 py-3">{product.name}</td>
+                    <td className="px-4 py-3 text-right">{product.price.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="number"
+                        min="1"
+                        value={product.quantity}
+                        onChange={(e) => handleQuantityChange(index, parseInt(e.target.value))}
+                        className="w-20 p-2 text-center border rounded-md bg-white text-black"
+                      />
                     </td>
+                    <td className="px-4 py-3 font-bold text-red-500 text-right">{(product.price * product.quantity).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-center font-semibold text-gray-700">N/A</td>
                     <td className="px-4 py-3 text-green-600 font-semibold">{product.status}</td>
                   </tr>
                 ))
@@ -76,9 +145,8 @@ const POSReturn = () => {
             New
           </button>
           <div className="flex items-center gap-4 text-xl font-semibold">
-            <br></br>
             <span>Total:</span>
-            <span className="text-blue-600 font-bold">45,000.00 LKR</span>
+            <span className="text-blue-600 font-bold">{totalAmount.toLocaleString()} LKR</span>
           </div>
         </div>
       </div>
