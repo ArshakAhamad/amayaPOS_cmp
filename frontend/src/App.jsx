@@ -59,126 +59,131 @@ import CashierPosPay from './components/Pages/CashierPanel/SalesButton/PosPay';
 import { Logout } from './components/Auth/Logout';
 import SupplierHY from './components/Pages/AdminPanel/SupplierButton/SupplierBills';
 
+// Import the CartProvider
+import { CartProvider } from './contexts/CartContext';
+
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [userRole, setUserRole] = useState(null); // Track user role (Admin/Cashier)
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Track authentication status
 
-    // Debug: Log state changes
-    React.useEffect(() => {
-      console.log("isAuthenticated:", isAuthenticated);
-      console.log("userRole:", userRole);
-    }, [isAuthenticated, userRole]);
-    
+  // Debug: Log state changes
+  React.useEffect(() => {
+    console.log("isAuthenticated:", isAuthenticated);
+    console.log("userRole:", userRole);
+  }, [isAuthenticated, userRole]);
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
   return (
-    <Router>
-      <Routes>
-        {/* Login Route */}
-        <Route
-          path="/Login"
-          element={<Login setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />}
-        />
+    <CartProvider> {/* Wrap the entire app with CartProvider */}
+      <Router>
+        <Routes>
+          {/* Login Route */}
+          <Route
+            path="/Login"
+            element={<Login setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />}
+          />
 
-        {/* Logout Route */}
-        <Route
-          path="/Logout"
-          element={<Logout setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />}
-        />
+          {/* Logout Route */}
+          <Route
+            path="/Logout"
+            element={<Logout setIsAuthenticated={setIsAuthenticated} setUserRole={setUserRole} />}
+          />
 
-        {/* Redirect to Login if not authenticated, otherwise redirect to the correct panel */}
-        <Route
-          path="/"
-          element={
-            isAuthenticated ? (
-              <Navigate to={userRole === "Admin" ? "/AdminPanel" : "/CashierPanel"} replace />
-            ) : (
-              <Navigate to="/Login" replace />
-            )
-          }
-        />
+          {/* Redirect to Login if not authenticated, otherwise redirect to the correct panel */}
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? (
+                <Navigate to={userRole === "Admin" ? "/AdminPanel" : "/CashierPanel"} replace />
+              ) : (
+                <Navigate to="/Login" replace />
+              )
+            }
+          />
 
-        {/* Admin Panel Routes */}
-        <Route
-          path="/AdminPanel/*"
-          element={
-            isAuthenticated && userRole === "Admin" ? (
-              <AdminLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} setUserRole={setUserRole} />
-            ) : (
-              <Navigate to="/Login" replace />
-            )
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="CashInHand" element={<CashInHand />} />
-          <Route path="SalesProfit" element={<SalesProfit />} />
-          <Route path="ProfitLossReport" element={<ProfitLossReport />} />
-          <Route path="ProductMovement" element={<ProductMovement />} />
-          <Route path="POS" element={<POS />} />
-          <Route path="PosPay" element={<PosPay />} />
-          <Route path="POSReturn" element={<POSReturn />} />
-          <Route path="POSReceipts" element={<POSReceipts />} />
-          <Route path="POSReorders" element={<POSReorders />} />
-          <Route path="POSExpenses" element={<POSExpenses />} />
-          <Route path="VoucherList" element={<VoucherList />} />
-          <Route path="AddVouchers" element={<AddVouchers />} />
-          <Route path="Profile" exact element={<Profile />} />
-          <Route path="SalesRepList" exact element={<SalesRepList />} />
-          <Route path="New" exact element={<NewSalesRep />} />
-          <Route path="CustomerList" exact element={<CustomerList />} />
-          <Route path="NewCustomer" exact element={<NewCustomer />} />
-          <Route path="ProductsList" exact element={<ProductList />} />
-          <Route path="CreateProducts" exact element={<CreateProducts />} />
-          <Route path="CategoryList" exact element={<CategoryList />} />
-          <Route path="CreateCategory" exact element={<CreateCategory />} />
-          <Route path="PurchaseBills" exact element={<PurchaseBills />} />
-          <Route path="ProductIn" exact element={<ProductIn />} />
-          <Route path="ProductReturn" exact element={<ProductReturn />} />
-          <Route path="SupplierList" exact element={<SupplierList />} />
-          <Route path="CreateSupplier" exact element={<CreateSupplier />} />
-          <Route path="SupplierBills" exact element={<SupplierHY />} />
-          <Route path="StoreList" exact element={<StoreList />} />
-          <Route path="CreateStore" exact element={<CreateStore />} />
-          <Route path="StoreType" exact element={<StoreType />} />
-          <Route path="CreateStoreTypes" exact element={<CreateStoreTypes />} />
-        </Route>
+          {/* Admin Panel Routes */}
+          <Route
+            path="/AdminPanel/*"
+            element={
+              isAuthenticated && userRole === "Admin" ? (
+                <AdminLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} setUserRole={setUserRole} />
+              ) : (
+                <Navigate to="/Login" replace />
+              )
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="CashInHand" element={<CashInHand />} />
+            <Route path="SalesProfit" element={<SalesProfit />} />
+            <Route path="ProfitLossReport" element={<ProfitLossReport />} />
+            <Route path="ProductMovement" element={<ProductMovement />} />
+            <Route path="POS" element={<POS />} />
+            <Route path="PosPay" element={<PosPay />} />
+            <Route path="POSReturn" element={<POSReturn />} />
+            <Route path="POSReceipts" element={<POSReceipts />} />
+            <Route path="POSReorders" element={<POSReorders />} />
+            <Route path="POSExpenses" element={<POSExpenses />} />
+            <Route path="VoucherList" element={<VoucherList />} />
+            <Route path="AddVouchers" element={<AddVouchers />} />
+            <Route path="Profile" exact element={<Profile />} />
+            <Route path="SalesRepList" exact element={<SalesRepList />} />
+            <Route path="New" exact element={<NewSalesRep />} />
+            <Route path="CustomerList" exact element={<CustomerList />} />
+            <Route path="NewCustomer" exact element={<NewCustomer />} />
+            <Route path="ProductsList" exact element={<ProductList />} />
+            <Route path="CreateProducts" exact element={<CreateProducts />} />
+            <Route path="CategoryList" exact element={<CategoryList />} />
+            <Route path="CreateCategory" exact element={<CreateCategory />} />
+            <Route path="PurchaseBills" exact element={<PurchaseBills />} />
+            <Route path="ProductIn" exact element={<ProductIn />} />
+            <Route path="ProductReturn" exact element={<ProductReturn />} />
+            <Route path="SupplierList" exact element={<SupplierList />} />
+            <Route path="CreateSupplier" exact element={<CreateSupplier />} />
+            <Route path="SupplierBills" exact element={<SupplierHY />} />
+            <Route path="StoreList" exact element={<StoreList />} />
+            <Route path="CreateStore" exact element={<CreateStore />} />
+            <Route path="StoreType" exact element={<StoreType />} />
+            <Route path="CreateStoreTypes" exact element={<CreateStoreTypes />} />
+          </Route>
 
-        {/* Cashier Panel Routes */}
-        <Route
-          path="/CashierPanel/*"
-          element={
-            isAuthenticated && userRole === "Cashier" ? (
-              <CashierLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} setUserRole={setUserRole} />
-            ) : (
-              <Navigate to="/Login" replace />
-            )
-          }
-        >
-          <Route index element={<CashierDashboard />} />
-          <Route path="CashInHand" element={<CashierCashInHand />} />
-          <Route path="ProductMovement" element={<ProductMovement />} />
-          <Route path="POS" element={<CashierPOS />} />
-          <Route path="PosPay" element={<CashierPosPay />} />
-          <Route path="POSReturn" element={<POSReturn />} />
-          <Route path="POSReceipts" element={<CashierPOSReceipts />} />
-          <Route path="POSReorders" element={<CashierPOSReorders />} />
-          <Route path="POSExpenses" element={<CashierPOSExpenses />} />
-          <Route path="VoucherList" element={<CashierVoucherList />} />
-          <Route path="AddVouchers" element={<CashierAddVouchers />} />
-          <Route path="Profile" element={<CashierProfile />} />
-          <Route path="SalesRepList" element={<CashierSalesRepList />} />
-          <Route path="New" element={<CashierNewSalesRep />} />
-          <Route path="CustomerList" element={<CashierCustomerList />} />
-          <Route path="NewCustomer" element={<CashierNewCustomer />} />
-        </Route>
+          {/* Cashier Panel Routes */}
+          <Route
+            path="/CashierPanel/*"
+            element={
+              isAuthenticated && userRole === "Cashier" ? (
+                <CashierLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} setUserRole={setUserRole} />
+              ) : (
+                <Navigate to="/Login" replace />
+              )
+            }
+          >
+            <Route index element={<CashierDashboard />} />
+            <Route path="CashInHand" element={<CashierCashInHand />} />
+            <Route path="ProductMovement" element={<ProductMovement />} />
+            <Route path="POS" element={<CashierPOS />} />
+            <Route path="PosPay" element={<CashierPosPay />} />
+            <Route path="POSReturn" element={<POSReturn />} />
+            <Route path="POSReceipts" element={<CashierPOSReceipts />} />
+            <Route path="POSReorders" element={<CashierPOSReorders />} />
+            <Route path="POSExpenses" element={<CashierPOSExpenses />} />
+            <Route path="VoucherList" element={<CashierVoucherList />} />
+            <Route path="AddVouchers" element={<CashierAddVouchers />} />
+            <Route path="Profile" element={<CashierProfile />} />
+            <Route path="SalesRepList" element={<CashierSalesRepList />} />
+            <Route path="New" element={<CashierNewSalesRep />} />
+            <Route path="CustomerList" element={<CashierCustomerList />} />
+            <Route path="NewCustomer" element={<CashierNewCustomer />} />
+          </Route>
 
-        {/* Handle Undefined Routes (404) */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+          {/* Handle Undefined Routes (404) */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </CartProvider>
   );
 }
 

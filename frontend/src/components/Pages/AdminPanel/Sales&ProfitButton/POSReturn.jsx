@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
-
+import React, { useState, useEffect, useContext } from "react";
+import { CartContext } from "../../../../contexts/CartContext";
 const POSReturn = () => {
   const [products, setProducts] = useState([]); // State to store fetched products
   const [selectedProduct, setSelectedProduct] = useState(""); // State to store selected product ID
-  const [cart, setCart] = useState([]); // State to store selected products for return
+  const [selectedProductDetails, setSelectedProductDetails] = useState(null); // State to store selected product details
+  const { cart, addToCart, updateQuantity } = useContext(CartContext); // Use the shared cart state and functions
 
   // Fetch products from the backend
   useEffect(() => {
@@ -34,15 +35,24 @@ const POSReturn = () => {
     const selectedProduct = products.find((product) => product.id === parseInt(selectedValue));
 
     if (selectedProduct) {
+      setSelectedProductDetails(selectedProduct); // Store the selected product details
+    } else {
+      setSelectedProductDetails(null); // Clear the selected product details if no product is selected
+    }
+  };
+
+  // Handle "Add to Bill" button click
+  const handleAddToBill = () => {
+    if (selectedProductDetails) {
       // Check if the product is already in the cart
-      const isProductInCart = cart.some((product) => product.id === selectedProduct.id);
+      const isProductInCart = cart.some((product) => product.id === selectedProductDetails.id);
 
       if (!isProductInCart) {
         // Add the selected product to the cart
         const newProduct = {
-          id: selectedProduct.id,
-          name: selectedProduct.product_name,
-          price: selectedProduct.price,
+          id: selectedProductDetails.id,
+          name: selectedProductDetails.product_name,
+          price: selectedProductDetails.price,
           quantity: 1,
           status: "Pending Return",
         };
@@ -50,20 +60,18 @@ const POSReturn = () => {
         // Debugging: Check if the product is added to the cart
         console.log("New Product Added to Cart:", newProduct);
 
-        setCart((prevCart) => [...prevCart, newProduct]);
+        addToCart(newProduct); // Use the shared addToCart function
       } else {
         alert("Product is already in the cart.");
       }
+    } else {
+      alert("Please select a product first.");
     }
   };
 
   // Handle quantity change
   const handleQuantityChange = (index, value) => {
-    setCart((prevCart) =>
-      prevCart.map((product, i) =>
-        i === index ? { ...product, quantity: Math.max(1, value) } : product
-      )
-    );
+    updateQuantity(index, value); // Use the shared updateQuantity function
   };
 
   // Calculate total amount
@@ -91,6 +99,12 @@ const POSReturn = () => {
               </option>
             ))}
           </select>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            onClick={handleAddToBill}
+          >
+            Add to Bill
+          </button>
         </div>
 
         {/* 🔷 Table Section */}

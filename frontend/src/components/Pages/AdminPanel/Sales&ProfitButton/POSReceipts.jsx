@@ -1,35 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Printer } from 'lucide-react';
 
 const POSReceipts = () => {
-  const [receipts, setReceipts] = useState([
-    {
-      customer: 'Walk-In-Customer',
-      phone: '+94757110053',
-      date: '2024-05-06 15:51:35',
-      receiptNumber: 2865,
-      cash: 3500,
-      card: 0,
-      createdBy: 'Arshak',
-      status: 'Inactive',
-    },
-    {
-      customer: 'Walk-In-Customer',
-      phone: '+94715254076',
-      date: '2024-05-06 14:58:49',
-      receiptNumber: 2864,
-      cash: 0,
-      card: 1500,
-      createdBy: 'Dulanga Bro',
-      status: 'Active',
-    },
-    // More sample data as required...
-  ]);
+  const [receipts, setReceipts] = useState([]);
+
+  // Fetch payment data from the API
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/payments');
+        if (!response.ok) {
+          throw new Error('Failed to fetch payments');
+        }
+        const data = await response.json();
+        setReceipts(data);
+      } catch (error) {
+        console.error('Error fetching payments:', error);
+      }
+    };
+
+    fetchPayments();
+  }, []);
 
   return (
     <div className="main-content p-6">
       <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
-        
         {/* Title & Search Bar */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold">POS Receipts</h2>
@@ -59,22 +54,22 @@ const POSReceipts = () => {
             </thead>
             <tbody>
               {receipts.map((receipt, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50 transition">
+                <tr key={receipt.id} className="border-b hover:bg-gray-50 transition">
                   <td className="px-4 py-3">{index + 1}</td>
                   <td className="px-4 py-3">{receipt.customer}</td>
                   <td className="px-4 py-3">{receipt.phone}</td>
-                  <td className="px-4 py-3">{receipt.date}</td>
-                  <td className="px-4 py-3">{receipt.receiptNumber}</td>
+                  <td className="px-4 py-3">{new Date(receipt.created_at).toLocaleString()}</td>
+                  <td className="px-4 py-3">{receipt.receipt_number}</td>
                   <td className="px-4 py-3 font-bold">{receipt.cash.toLocaleString()}</td>
                   <td className="px-4 py-3">{receipt.card}</td>
-                  <td className="px-4 py-3">{receipt.createdBy}</td>
+                  <td className="px-4 py-3">{receipt.created_by}</td>
                   <td className={`px-4 py-3 font-semibold ${receipt.status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
                     {receipt.status}
                   </td>
                   <td className="px-4 py-3">
                     <button className="text-red-600 hover:text-red-800 font-semibold mr-2">Cancel</button>
                     <button>
-                    <Printer />
+                      <Printer />
                     </button>
                   </td>
                 </tr>
