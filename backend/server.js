@@ -18,6 +18,7 @@ import SupplierRoutes from './routes/SupplierRoute.js';
 import StoreRoutes from './routes/storeRoute.js';
 import storeTypeRoutes from './routes/storeTypeRoute.js';
 import POSRoutes from './routes/POSRoute.js';
+import purchaseRoutes from './routes/purchaseRoute.js';
 // Uncomment these routes when ready
 // import productRoutes from './routes/productRoute.js';
 // import salesRoutes from './routes/salesRoute.js';
@@ -64,6 +65,7 @@ app.use('/api/',SupplierRoutes);
 app.use('/api/',StoreRoutes);
 app.use('/api/',storeTypeRoutes);
 app.use('/api/',POSRoutes);
+app.use('/api/',purchaseRoutes);
 // Uncomment these routes when ready
 // app.use('/api/products', productRoutes);
 // app.use('/api/sales', salesRoutes);

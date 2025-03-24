@@ -254,7 +254,7 @@ router.post('/returns', async (req, res) => {
       res.status(500).json({ success: false, message: 'Server error', error: err.message });
     }
   });
-
+//------------------------------------------------POS Reorders-----------------------------------------------------------------------------------------------------//
 // GET /api/reorders - Fetch reorder products with sale quantity for the last 30 days
 router.get('/reorders', async (req, res) => {
   try {
@@ -282,5 +282,60 @@ GROUP BY p.id
   }
 });
 
+//-------------------------------------------------------------POS Expenses-------------------------------------------------------------------------------------------------//
+// GET /api/pos_expenses - Fetch all expenses
+router.get('/pos_expenses', async (req, res) => {
+  try {
+    const [pos_expenses] = await pool.query('SELECT * FROM pos_expenses');
+    res.status(200).json(pos_expenses);
+  } catch (error) {
+    console.error('Error fetching expenses:', error);
+    res.status(500).json({ error: 'Failed to fetch expenses' });
+  }
+});
+
+// POST /api/pos_expenses - Add a new expense
+router.post('/pos_expenses', async (req, res) => {
+  const { date, expense, amount, createdBy } = req.body;
+
+  // Validate required fields
+  if (!date || !expense || !amount || !createdBy) {
+    return res.status(400).json({ success: false, message: 'All fields are required.' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO pos_expenses (date, expense, amount, created_by) VALUES (?, ?, ?, ?)`,
+      [date, expense, amount, createdBy]
+    );
+
+    if (result.affectedRows > 0) {
+      res.status(201).json({ success: true, message: 'Expense added successfully.' });
+    } else {
+      res.status(500).json({ success: false, message: 'Failed to add expense.' });
+    }
+  } catch (error) {
+    console.error('Error adding expense:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// DELETE /api/pos_expenses/:id - Delete an expense
+router.delete('/pos_expenses/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [result] = await pool.query('DELETE FROM pos_expenses WHERE id = ?', [id]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ success: true, message: 'Expense deleted successfully.' });
+    } else {
+      res.status(404).json({ success: false, message: 'Expense not found.' });
+    }
+  } catch (error) {
+    console.error('Error deleting expense:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
 
 export default router;

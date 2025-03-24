@@ -12,6 +12,7 @@ const POSReorders = () => {
           throw new Error('Failed to fetch reorder products');
         }
         const data = await response.json();
+        console.log('API Response:', data); // Log the API response
         setReorderProducts(data);
       } catch (error) {
         console.error('Error fetching reorder products:', error);
