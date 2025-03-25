@@ -127,4 +127,35 @@ router.get('/products', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+
+
+// Get all active products
+router.get('/active', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        id,
+        product_name as productName,  // Using consistent naming
+        price,
+        avg_cost as avgCost,
+        min_quantity as minQuantity
+      FROM products
+      WHERE status = 'Active'
+      ORDER BY product_name ASC
+    `);
+    res.json({ 
+      success: true, 
+      products: rows 
+    });
+  } catch (err) {
+    console.error('Error fetching active products:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error',
+      error: err.message 
+    });
+  }
+});
+
+
 export default router;

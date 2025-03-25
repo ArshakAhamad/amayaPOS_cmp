@@ -3,12 +3,14 @@ import React, { useState, useEffect } from "react";
 const ProductIn = () => {
   const [productDetails, setProductDetails] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState("");
+  const [suppliers, setSuppliers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch product details from the backend on component mount
+  // Fetch product details and suppliers on component mount
   useEffect(() => {
     fetchProductDetails();
+    fetchSuppliers();
   }, []);
 
   // Fetch all products from the backend
@@ -18,7 +20,6 @@ const ProductIn = () => {
       setError(null);
       const response = await fetch("http://localhost:5000/api/productin");
       
-      // First check if response is OK
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -38,6 +39,23 @@ const ProductIn = () => {
       setError(error.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Fetch all suppliers from the backend
+  const fetchSuppliers = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/suppliers");
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSuppliers(data.suppliers);
+    } catch (error) {
+      console.error("Error fetching suppliers:", error);
+      setError(error.message);
     }
   };
 
@@ -73,15 +91,54 @@ const ProductIn = () => {
     ]);
   };
 
-  // Remove a product row
-  const handleRemoveProduct = (index) => {
+  // Delete a product from the database
+  const handleDeleteProduct = async (productId) => {
+    if (!productId) {
+      // For new unsaved products, just remove from local state
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to delete this product?")) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(`http://localhost:5000/api/productin/${productId}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      alert("Product deleted successfully!");
+      fetchProductDetails(); // Refresh the list
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      alert(`Error deleting product: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Remove a product row from local state
+  const handleRemoveProduct = (index, productId) => {
     if (productDetails.length <= 1) {
       alert("You must have at least one product");
       return;
     }
-    const updatedProducts = [...productDetails];
-    updatedProducts.splice(index, 1);
-    setProductDetails(updatedProducts);
+
+    if (productId) {
+      // If product has an ID, it's saved in the database
+      handleDeleteProduct(productId);
+    } else {
+      // For new unsaved products, just remove from local state
+      const updatedProducts = [...productDetails];
+      updatedProducts.splice(index, 1);
+      setProductDetails(updatedProducts);
+    }
   };
 
   // Save all products to the backend
@@ -116,7 +173,7 @@ const ProductIn = () => {
             totalCost: parseFloat(p.totalCost) || 0,
             stock: parseInt(p.stock) || 0
           })),
-          supplier: selectedSupplier
+          supplierId: selectedSupplier
         }),
       });
 
@@ -169,8 +226,11 @@ const ProductIn = () => {
               required
             >
               <option value="">Select Supplier</option>
-              <option value="supplier1">Supplier 1</option>
-              <option value="supplier2">Supplier 2</option>
+              {suppliers.map(supplier => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.supplier_name}
+                </option>
+              ))}
             </select>
           </div>
           <div className="flex items-center gap-4 flex-wrap">
@@ -268,7 +328,7 @@ const ProductIn = () => {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
-                      onClick={() => handleRemoveProduct(index)}
+                      onClick={() => handleRemoveProduct(index, product.id)}
                       className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                     >
                       Remove
