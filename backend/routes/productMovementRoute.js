@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
   const { startDate, endDate, productId } = req.query;
 
   try {
-    // Base query for sales data (from payments and payment_items)
+    // Base query for sales data
     let salesQuery = `
       SELECT 
         DATE_FORMAT(p.created_at, '%Y-%m-%d') as date,
@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
         p.receipt_number as reference,
         pi.product_name as product,
         pi.price,
-        (SELECT last_cost FROM products WHERE id = pi.product_id) as cost,
+        pr.last_cost as cost,
         0 as productIn,
         pi.quantity as productOut,
         NULL as returnId,
@@ -33,18 +33,18 @@ router.get('/', async (req, res) => {
         ) as inventory
       FROM payments p
       JOIN payment_items pi ON p.id = pi.payment_id
+      JOIN products pr ON pi.product_id = pr.id
       WHERE p.status = 'Active' AND p.created_at BETWEEN ? AND ?
     `;
 
-    const params = [startDate, endDate];
+    const salesParams = [startDate, endDate];
 
-    // Add product filter if specified
     if (productId) {
       salesQuery += ' AND pi.product_id = ?';
-      params.push(productId);
+      salesParams.push(productId);
     }
 
-    // Query for purchase data (from productin)
+    // Query for purchase data
     let purchaseQuery = `
       SELECT 
         DATE_FORMAT(date, '%Y-%m-%d') as date,
@@ -78,8 +78,8 @@ router.get('/', async (req, res) => {
       purchaseParams.push(productId);
     }
 
-    // Combine both queries
-    const [sales] = await pool.query(salesQuery, params);
+    // Execute both queries
+    const [sales] = await pool.query(salesQuery, salesParams);
     const [purchases] = await pool.query(purchaseQuery, purchaseParams);
     const movements = [...sales, ...purchases].sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -92,8 +92,8 @@ router.get('/', async (req, res) => {
 
     movements.forEach(movement => {
       if (movement.type === 'Sale') {
-        summary.productSales += movement.price * movement.productOut;
-        summary.costDiscounts += movement.cost * movement.productOut;
+        summary.productSales += Number(movement.price) * Number(movement.productOut);
+        summary.costDiscounts += Number(movement.cost) * Number(movement.productOut);
       }
     });
 

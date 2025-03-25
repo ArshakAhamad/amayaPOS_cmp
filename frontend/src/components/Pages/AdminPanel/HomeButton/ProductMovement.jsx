@@ -24,10 +24,12 @@ const ProductMovement = () => {
         const data = await response.json();
         if (data.success) {
           setProducts(data.products);
+        } else {
+          setError(data.message || "Failed to load products");
         }
       } catch (err) {
         console.error("Error fetching products:", err);
-        setError("Failed to load products");
+        setError("Failed to connect to server");
       }
     };
     fetchProducts();
@@ -50,35 +52,40 @@ const ProductMovement = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Ensure all numeric fields are numbers
+        // Process and validate all numeric fields
         const processedData = data.movements.map(item => ({
           ...item,
-          price: Number(item.price),
-          cost: Number(item.cost),
-          productIn: Number(item.productIn),
-          productOut: Number(item.productOut),
-          inventory: Number(item.inventory)
+          date: item.date || '',
+          type: item.type || '',
+          reference: item.reference || '',
+          product: item.product || '',
+          price: Number(item.price) || 0,
+          cost: Number(item.cost) || 0,
+          productIn: Number(item.productIn) || 0,
+          productOut: Number(item.productOut) || 0,
+          returnId: item.returnId || '',
+          inventory: Number(item.inventory) || 0
         }));
-        
+
         setProductMovementData(processedData);
         setSalesData({
-          ...salesData,
-          productSales: Number(data.summary.productSales) || 0,
-          costDiscounts: Number(data.summary.costDiscounts) || 0,
-          profitLoss: Number(data.summary.profitLoss) || 0
+          productSales: Number(data.summary?.productSales) || 0,
+          voucherSales: 0, // Not currently calculated
+          costDiscounts: Number(data.summary?.costDiscounts) || 0,
+          expenses: 0, // Not currently calculated
+          profitLoss: Number(data.summary?.profitLoss) || 0
         });
       } else {
-        setError(data.message || "Failed to load data");
+        setError(data.message || "No data available for the selected filters");
       }
     } catch (err) {
       console.error("Error generating report:", err);
-      setError("Failed to connect to server");
+      setError("Failed to generate report. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Error boundary would be better, but this is a simple fallback
   if (error) {
     return (
       <div className="main-content p-6">
@@ -203,8 +210,8 @@ const ProductMovement = () => {
                     <td className="px-4 py-2">{row.type}</td>
                     <td className="px-4 py-2">{row.reference}</td>
                     <td className="px-4 py-2">{row.product}</td>
-                    <td className="px-4 py-2">{typeof row.price === 'number' ? row.price.toFixed(2) : 'N/A'}</td>
-                    <td className="px-4 py-2">{typeof row.cost === 'number' ? row.cost.toFixed(2) : 'N/A'}</td>
+                    <td className="px-4 py-2">{row.price.toFixed(2)}</td>
+                    <td className="px-4 py-2">{row.cost.toFixed(2)}</td>
                     <td className="px-4 py-2">{row.productIn}</td>
                     <td className="px-4 py-2">{row.productOut}</td>
                     <td className="px-4 py-2">{row.returnId || '-'}</td>
