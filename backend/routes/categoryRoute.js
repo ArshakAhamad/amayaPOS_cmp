@@ -124,4 +124,65 @@ router.get('/categories/export/json', async (req, res) => {
   }
 });
 
+// Route to update category details
+router.put('/categories/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    category_name,
+    description,
+    status
+  } = req.body;
+
+  try {
+    // Check if category exists
+    const [existingCategory] = await pool.execute(
+      'SELECT * FROM categories WHERE id = ?', 
+      [id]
+    );
+    
+    if (existingCategory.length === 0) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
+    // Update the category in the database
+    const [result] = await pool.execute(
+      `UPDATE categories SET 
+        category_name = ?,
+        description = ?,
+        status = ?
+      WHERE id = ?`,
+      [
+        category_name,
+        description,
+        status,
+        id
+      ]
+    );
+
+    if (result.affectedRows > 0) {
+      // Fetch the updated record
+      const [updatedCategory] = await pool.execute(
+        'SELECT * FROM categories WHERE id = ?', 
+        [id]
+      );
+      return res.json({ 
+        success: true, 
+        message: 'Category updated successfully', 
+        data: updatedCategory[0] 
+      });
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Failed to update category' 
+      });
+    }
+  } catch (err) {
+    console.error('Error updating category:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+});
+
 export default router;

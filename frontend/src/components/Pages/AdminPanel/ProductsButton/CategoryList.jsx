@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Pencil } from "lucide-react";
+import { Pencil, Download, X, Save } from "lucide-react";
 
 const CategoryList = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -9,6 +9,14 @@ const CategoryList = () => {
   const [error, setError] = useState(null);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentCategory, setCurrentCategory] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    category_name: "",
+    description: "",
+    status: "Active"
+  });
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Fetch categories from the backend API
   useEffect(() => {
@@ -31,6 +39,51 @@ const CategoryList = () => {
 
     fetchCategories();
   }, []);
+
+  // Handle edit click
+  const handleEditClick = (category) => {
+    setCurrentCategory(category);
+    setEditFormData({
+      category_name: category.category_name,
+      description: category.description || "",
+      status: category.status || "Active"
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // Handle form changes
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData({
+      ...editFormData,
+      [name]: value
+    });
+  };
+
+  // Handle form submission
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/categories/${currentCategory.id}`,
+        editFormData
+      );
+
+      if (response.data.success) {
+        setCategories(categories.map(category => 
+          category.id === currentCategory.id ? 
+          { ...category, ...editFormData } : category
+        ));
+        setIsEditModalOpen(false);
+        setSuccessMessage('Category updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError(response.data.message || 'Failed to update category');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'An error occurred while updating category.');
+    }
+  };
 
   // Handle export functionality
   const handleExport = (type) => {
@@ -145,6 +198,90 @@ const CategoryList = () => {
   return (
     <div className="main-content p-6">
       <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+            {successMessage}
+          </div>
+        )}
+   {/* Edit Modal - Updated to match StoreType style */}
+   {isEditModalOpen && currentCategory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex justify-between items-center border-b p-4">
+              <h3 className="text-lg font-semibold">Edit Category</h3>
+              <button 
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <br></br>
+            <form onSubmit={handleEditSubmit} className="p-4">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category Name
+                </label>
+                <input
+                  type="text"
+                  name="category_name"
+                  value={editFormData.category_name}
+                  onChange={handleFormChange}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={editFormData.description}
+                  onChange={handleFormChange}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  rows="3"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <select
+                  name="status"
+                  value={editFormData.status}
+                  onChange={handleFormChange}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
+                >
+                  <Save size={16} />
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
@@ -153,7 +290,18 @@ const CategoryList = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          
+            <input
+              type="text"
+              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
+              placeholder="🔍 Search categories..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+            
+            <div className="flex items-center gap-2">
               <span className="text-gray-700 whitespace-nowrap">Entries per page:</span>
               <select 
                 className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -167,17 +315,7 @@ const CategoryList = () => {
                 <option value="20">20</option>
                 <option value="50">50</option>
               </select>
-            
-              <input
-              type="text"
-              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
-              placeholder="🔍 Search categories..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
+            </div>
           </div>
         </div>
 
@@ -225,8 +363,11 @@ const CategoryList = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-50">
-                            <Pencil size={16} className="inline" />
+                          <button 
+                            onClick={() => handleEditClick(category)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-50"
+                          >
+                            
                             <span className="sr-only">Edit</span>
                           </button>
                         </td>
@@ -248,8 +389,9 @@ const CategoryList = () => {
         {/* Footer Section */}
         <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-sm text-gray-600">
-            Showing <span className="font-medium">{paginatedCategories.length}</span> of{' '}
-            <span className="font-medium">{filteredCategories.length}</span> categories
+            Showing <span className="font-medium">{(currentPage - 1) * entriesPerPage + 1}</span> to{' '}
+            <span className="font-medium">{Math.min(currentPage * entriesPerPage, filteredCategories.length)}</span>{' '}
+            of <span className="font-medium">{filteredCategories.length}</span> categories
           </div>
           
           {/* Export Buttons */}
@@ -258,13 +400,14 @@ const CategoryList = () => {
               <button
                 key={type}
                 onClick={() => handleExport(type)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
                   filteredCategories.length === 0
                     ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
                 disabled={filteredCategories.length === 0}
               >
+             
                 Export {type}
               </button>
             ))}
@@ -281,7 +424,7 @@ const CategoryList = () => {
                 className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="sr-only">Previous</span>
-                &larr;
+               
               </button>
               
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -323,12 +466,14 @@ const CategoryList = () => {
                 className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="sr-only">Next</span>
-                &rarr;
+              
               </button>
             </nav>
           </div>
         )}
       </div>
+
+   
     </div>
   );
 };

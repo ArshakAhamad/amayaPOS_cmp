@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Pencil, Download } from "lucide-react";
+import { Pencil, Download, X, Save } from "lucide-react";
+import axios from "axios";
 
 const StoreList = () => {
   const [stores, setStores] = useState([]);
@@ -8,6 +9,15 @@ const StoreList = () => {
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentStore, setCurrentStore] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    type: "",
+    description: "",
+    status: "Active"
+  });
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Fetch stores from the backend
   useEffect(() => {
@@ -15,12 +25,11 @@ const StoreList = () => {
       setLoading(true);
       setError("");
       try {
-        const response = await fetch("http://localhost:5000/api/stores");
-        const data = await response.json();
-        if (data.success) {
-          setStores(data.stores);
+        const response = await axios.get("http://localhost:5000/api/stores");
+        if (response.data.success) {
+          setStores(response.data.stores);
         } else {
-          setError(data.message || "Failed to fetch stores.");
+          setError(response.data.message || "Failed to fetch stores.");
         }
       } catch (err) {
         setError("Error fetching stores. Please try again.");
@@ -32,6 +41,65 @@ const StoreList = () => {
 
     fetchStores();
   }, []);
+
+  // Handle edit click
+  const handleEditClick = (store) => {
+    setCurrentStore(store);
+    setEditFormData({
+      name: store.name,
+      type: store.type,
+      description: store.description || "",
+      status: store.status || "Active"
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // Handle form changes
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData({
+      ...editFormData,
+      [name]: value
+    });
+  };
+
+  // Handle form submission
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const requestData = {
+        storeName: editFormData.name,
+        storeType: editFormData.type,
+        description: editFormData.description,
+        status: editFormData.status
+      };
+
+      const response = await axios.put(
+        `http://localhost:5000/api/stores/${currentStore.id}`,
+        requestData
+      );
+
+      if (response.data.success) {
+        setStores(stores.map(store => 
+          store.id === currentStore.id ? 
+          { 
+            ...store, 
+            name: editFormData.name,
+            type: editFormData.type,
+            description: editFormData.description,
+            status: editFormData.status
+          } : store
+        ));
+        setIsEditModalOpen(false);
+        setSuccessMessage('Store updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError(response.data.message || 'Failed to update store');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'An error occurred while updating store.');
+    }
+  };
 
   // Filter stores based on search query
   const filteredStores = stores.filter(
@@ -129,6 +197,105 @@ const StoreList = () => {
   return (
     <div className="main-content p-6">
       <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+            {successMessage}
+          </div>
+        )}
+
+        {/* Edit Modal - Updated to match StoreType style */}
+        {isEditModalOpen && currentStore && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+              <div className="flex justify-between items-center border-b p-4">
+                <h3 className="text-lg font-semibold">Edit Store</h3>
+                <button 
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <br></br>
+              <form onSubmit={handleEditSubmit} className="p-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Store Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={editFormData.name}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Store Type
+                  </label>
+                  <input
+                    type="text"
+                    name="type"
+                    value={editFormData.type}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    value={editFormData.description}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    rows="3"
+                  />
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    value={editFormData.status}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+                
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
+                  >
+                    <Save size={16} />
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
@@ -148,7 +315,7 @@ const StoreList = () => {
               className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
             />
             
-          {/* <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <span className="text-gray-700 whitespace-nowrap">Show:</span>
               <select 
                 className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -162,7 +329,7 @@ const StoreList = () => {
                 <option value="20">20</option>
                 <option value="50">50</option>
               </select>
-            </div>*/}  
+            </div>  
           </div>
         </div>
 
@@ -227,9 +394,12 @@ const StoreList = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-50">
+                        <button 
+                          onClick={() => handleEditClick(store)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-50"
+                        >
                           <Pencil size={16} className="inline" />
-                          <span className="sr-only"></span>
+                          <span className="sr-only">Edit</span>
                         </button>
                       </td>
                     </tr>
@@ -267,7 +437,7 @@ const StoreList = () => {
                 }`}
                 disabled={filteredStores.length === 0}
               >
-                
+                <Download size={14} />
                 Export {type}
               </button>
             ))}

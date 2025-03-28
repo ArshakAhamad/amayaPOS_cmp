@@ -84,5 +84,66 @@ router.patch('/sales-rep/status/:id', async (req, res) => {
     }
   });
   
+// Route to update sales rep details
+router.put('/sales-reps/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    salesrep_name,
+    user_name,
+    store,
+    description,
+    email,
+    phone,
+    remarks,
+    notification_method,
+    status
+  } = req.body;
+
+  try {
+    // Check if sales rep exists
+    const [existingRep] = await pool.execute('SELECT * FROM sales_rep WHERE salesrep_id = ?', [id]);
+    if (existingRep.length === 0) {
+      return res.status(404).json({ success: false, message: 'Sales Rep not found' });
+    }
+
+    // Update the sales rep in the database
+    const [result] = await pool.execute(
+      `UPDATE sales_rep SET 
+        salesrep_name = ?,
+        user_name = ?,
+        store = ?,
+        description = ?,
+        email = ?,
+        phone = ?,
+        remarks = ?,
+        notification_method = ?,
+        status = ?
+      WHERE salesrep_id = ?`,
+      [
+        salesrep_name,
+        user_name,
+        store,
+        description,
+        email,
+        phone,
+        remarks,
+        notification_method,
+        status,
+        id
+      ]
+    );
+
+    if (result.affectedRows > 0) {
+      // Fetch the updated record
+      const [updatedRep] = await pool.execute('SELECT * FROM sales_rep WHERE salesrep_id = ?', [id]);
+      return res.json({ success: true, message: 'Sales Rep updated successfully', data: updatedRep[0] });
+    } else {
+      return res.status(400).json({ success: false, message: 'Failed to update Sales Rep' });
+    }
+  } catch (err) {
+    console.error('Error updating sales rep:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 
 export default router;

@@ -157,5 +157,80 @@ router.get('/active', async (req, res) => {
   }
 });
 
+// Route to update product details
+router.put('/products/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    product_name,
+    barcode,
+    category,
+    price,
+    discount,
+    last_cost,
+    avg_cost,
+    status
+  } = req.body;
+
+  try {
+    // Check if product exists
+    const [existingProduct] = await pool.execute(
+      'SELECT * FROM products WHERE id = ?', 
+      [id]
+    );
+    
+    if (existingProduct.length === 0) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    // Update the product in the database
+    const [result] = await pool.execute(
+      `UPDATE products SET 
+        product_name = ?,
+        barcode = ?,
+        category = ?,
+        price = ?,
+        discount = ?,
+        last_cost = ?,
+        avg_cost = ?,
+        status = ?
+      WHERE id = ?`,
+      [
+        product_name,
+        barcode,
+        category,
+        price,
+        discount,
+        last_cost,
+        avg_cost,
+        status,
+        id
+      ]
+    );
+
+    if (result.affectedRows > 0) {
+      // Fetch the updated record
+      const [updatedProduct] = await pool.execute(
+        'SELECT * FROM products WHERE id = ?', 
+        [id]
+      );
+      return res.json({ 
+        success: true, 
+        message: 'Product updated successfully', 
+        data: updatedProduct[0] 
+      });
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Failed to update product' 
+      });
+    }
+  } catch (err) {
+    console.error('Error updating product:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+});
 
 export default router;
