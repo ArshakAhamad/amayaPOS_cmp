@@ -19,14 +19,11 @@ import StoreRoutes from './routes/storeRoute.js';
 import storeTypeRoutes from './routes/storeTypeRoute.js';
 import POSRoutes from './routes/POSRoute.js';
 import purchaseRoutes from './routes/purchaseRoute.js';
-import productReturnRoutes from './routes/productReturnRoute.js';
+import returnsRouter from './routes/productReturnRoute.js';
 import productMovementRoutes from './routes/productMovementRoute.js';
 import profitLossRoutes from './routes/profitLossRoutes.js';
-// Uncomment these routes when ready
-// import productRoutes from './routes/productRoute.js';
-// import salesRoutes from './routes/salesRoute.js';
-// import customerRoutes from './routes/customerRoute.js';
-// import voucherRoutes from './routes/voucherRoute.js';
+import cashRoutes from './routes/cashRoute.js';
+import salesProfitRoutes from './routes/salesProfitRoute.js';
 
 dotenv.config();
 
@@ -58,25 +55,22 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/', loginRoutes);
-app.use('/api/',salesRepRoutes);
-app.use('/api/',profileRoutes);
-app.use('/api/',voucherRoutes);
-app.use('/api/',customerRoutes);
-app.use('/api/',productRoutes);
-app.use('/api/',categoryRoutes);
-app.use('/api/',SupplierRoutes);
-app.use('/api/',StoreRoutes);
-app.use('/api/',storeTypeRoutes);
-app.use('/api/',POSRoutes);
+app.use('/api/', salesRepRoutes);
+app.use('/api/', profileRoutes);
+app.use('/api/', voucherRoutes);
+app.use('/api/', customerRoutes);
+app.use('/api/', productRoutes);
+app.use('/api/', categoryRoutes);
+app.use('/api/', SupplierRoutes);
+app.use('/api/', StoreRoutes);
+app.use('/api/', storeTypeRoutes);
+app.use('/api/', POSRoutes);
 app.use('/api/', purchaseRoutes);
-app.use('/api/', productReturnRoutes);
+app.use('/api/returns', returnsRouter);
 app.use('/api/productMovement', productMovementRoutes);
 app.use('/api/profitLoss', profitLossRoutes);
-// Uncomment these routes when ready
-// app.use('/api/products', productRoutes);
-// app.use('/api/sales', salesRoutes);
-// app.use('/api/customers', customerRoutes);
-// app.use('/api/vouchers', voucherRoutes);
+app.use('/api/', salesProfitRoutes);
+app.use('/api/', cashRoutes);
 
 // Catch unmatched routes
 app.use((req, res) => {
