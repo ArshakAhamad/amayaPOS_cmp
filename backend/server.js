@@ -24,6 +24,7 @@ import productMovementRoutes from './routes/productMovementRoute.js';
 import profitLossRoutes from './routes/profitLossRoutes.js';
 import cashRoutes from './routes/cashRoute.js';
 import salesProfitRoutes from './routes/salesProfitRoute.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 dotenv.config();
 
@@ -71,6 +72,7 @@ app.use('/api/productMovement', productMovementRoutes);
 app.use('/api/profitLoss', profitLossRoutes);
 app.use('/api/sales', salesProfitRoutes);
 app.use('/api/cashiers', cashRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Catch unmatched routes
 app.use((req, res) => {

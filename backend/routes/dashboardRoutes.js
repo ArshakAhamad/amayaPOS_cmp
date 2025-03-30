@@ -1,133 +1,131 @@
-// routes/dashboard.js
 import express from 'express';
 import pool from '../config/db.js';
+import authenticateToken from '../middlewares/authenticateToken.js';
 
 const router = express.Router();
 
 // Dashboard summary data
-router.get('/summary', async (req, res) => {
+router.get('/summary', authenticateToken, async (req, res) => {
   try {
-    // Get product sales total
+    // Get sales data
     const [salesResult] = await pool.query(`
-      SELECT SUM(pi.price * pi.quantity) as productSale
-      FROM payment_items pi
-      JOIN payments p ON pi.payment_id = p.id
-      WHERE p.status = 'Active'
+      SELECT 
+        SUM(CASE WHEN payment_method = 'Cash' THEN total_amount ELSE 0 END) AS cash_sales,
+        SUM(CASE WHEN payment_method = 'Voucher' THEN total_amount ELSE 0 END) AS voucher_sales,
+        COUNT(DISTINCT id) AS total_receipts
+      FROM payments
+      WHERE status = 'Active'
     `);
 
-    // Get voucher sales total
-    const [voucherResult] = await pool.query(`
-      SELECT COALESCE(SUM(v.value), 0) as voucherSale
-      FROM vouchers v
-      WHERE v.status = 'Redeemed'
+    // Get product count
+    const [productsResult] = await pool.query(`
+      SELECT COUNT(*) AS total_products 
+      FROM products 
+      WHERE status = 'Active'
     `);
 
-    // Get purchase due (simplified example)
-    const [purchaseDue] = await pool.query(`
-      SELECT COALESCE(SUM(totalCost), 0) as totalPurchaseDue
-      FROM productin
+    // Get customer count
+    const [customersResult] = await pool.query(`
+      SELECT COUNT(*) AS total_customers 
+      FROM customers 
+      WHERE customer_active = 1
     `);
 
-    // Get total products
-    const [productsCount] = await pool.query(`
-      SELECT COUNT(*) as totalProducts FROM products WHERE status = 'Active'
+    // Get monthly sales
+    const [monthlySales] = await pool.query(`
+      SELECT 
+        MONTH(created_at) AS month,
+        SUM(total_amount) AS amount
+      FROM payments
+      WHERE YEAR(created_at) = YEAR(CURRENT_DATE)
+      GROUP BY MONTH(created_at)
+      ORDER BY month
     `);
 
-    // Get total customers
-    const [customersCount] = await pool.query(`
-      SELECT COUNT(*) as totalCustomers FROM customers WHERE customer_active = 1
-    `);
+    // Format monthly sales data
+    const monthlySalesData = Array(12).fill(0);
+    monthlySales.forEach(sale => {
+      monthlySalesData[sale.month - 1] = Number(sale.amount || 0);
+    });
 
     res.json({
       success: true,
       data: {
-        productSale: salesResult[0].productSale || 0,
-        voucherSale: voucherResult[0].voucherSale || 0,
-        totalPurchaseDue: purchaseDue[0].totalPurchaseDue || 0,
-        totalProducts: productsCount[0].totalProducts || 0,
-        totalCustomers: customersCount[0].totalCustomers || 0
+        productSale: Number(salesResult[0].cash_sales || 0),
+        voucherSale: Number(salesResult[0].voucher_sales || 0),
+        totalPurchaseDue: 0, // You'll need to implement this
+        totalReceipts: salesResult[0].total_receipts,
+        totalProducts: productsResult[0].total_products,
+        totalCustomers: customersResult[0].total_customers,
+        monthlySales: monthlySalesData
       }
     });
-  } catch (err) {
-    console.error('Error fetching dashboard summary:', err);
+
+  } catch (error) {
+    console.error('Dashboard error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Failed to load dashboard data'
     });
   }
 });
 
-// routes/dashboard.js
-// Add this to the existing file
-
-// Monthly sales data
-router.get('/monthly-sales', async (req, res) => {
-    try {
-      const [results] = await pool.query(`
-        SELECT 
-          MONTH(p.created_at) as month,
-          SUM(pi.price * pi.quantity) as totalSales
-        FROM payment_items pi
-        JOIN payments p ON pi.payment_id = p.id
-        WHERE p.status = 'Active'
-          AND YEAR(p.created_at) = YEAR(CURRENT_DATE)
-        GROUP BY MONTH(p.created_at)
-        ORDER BY MONTH(p.created_at)
-      `);
-  
-      // Initialize array with 12 months (0 values)
-      const monthlySales = Array(12).fill(0);
-      
-      // Fill in actual sales data
-      results.forEach(row => {
-        monthlySales[row.month - 1] = Number(row.totalSales) || 0;
-      });
-  
-      res.json({
-        success: true,
-        data: monthlySales
-      });
-    } catch (err) {
-      console.error('Error fetching monthly sales:', err);
-      res.status(500).json({
-        success: false,
-        message: 'Server error'
-      });
-    }
-  });
-
-  // routes/dashboard.js
-// Add this to the existing file
-
 // Cashier performance data
-router.get('/cashier-summary', async (req, res) => {
-    try {
-      const [results] = await pool.query(`
-        SELECT 
-          u.username as name,
-          COALESCE(SUM(CASE WHEN p.payment_method = 'Cash' THEN p.total_amount ELSE 0 END), 0) as cash,
-          COALESCE(SUM(CASE WHEN p.payment_method = 'Card' THEN p.total_amount ELSE 0 END), 0) as card,
-          COALESCE(SUM(CASE WHEN p.voucher_id IS NOT NULL THEN p.total_amount ELSE 0 END), 0) as voucher,
-          COALESCE(SUM(p.total_amount), 0) as sale
-        FROM system_user u
-        LEFT JOIN payments p ON u.username = p.created_by
-          AND p.status = 'Active'
-          AND p.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-        WHERE u.role = 'Cashier'
-        GROUP BY u.username
-      `);
-  
-      res.json({
-        success: true,
-        data: results
-      });
-    } catch (err) {
-      console.error('Error fetching cashier summary:', err);
-      res.status(500).json({
-        success: false,
-        message: 'Server error'
-      });
-    }
-  });
+router.get('/cashiers', authenticateToken, async (req, res) => {
+  try {
+    console.log('Fetching cashier data...');
+    
+    const [cashiers] = await pool.query(`
+      SELECT 
+        u.id,
+        u.username AS name,
+        COALESCE(SUM(p.total_amount), 0) AS sale,
+        COALESCE(SUM(CASE WHEN p.payment_method = 'Cash' THEN p.total_amount ELSE 0 END), 0) AS cash,
+        COALESCE(SUM(CASE WHEN p.payment_method = 'Voucher' THEN p.total_amount ELSE 0 END), 0) AS voucher
+      FROM system_user u
+      LEFT JOIN payments p ON u.username = p.created_by
+      WHERE u.role = 'Cashier'
+      GROUP BY u.id, u.username
+    `);
+
+    console.log('Raw cashier data:', cashiers);
+
+    // Safe number conversion and formatting
+    const formatCurrency = (value) => {
+      const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+      return isNaN(num) ? 0 : Number(num.toFixed(2));
+    };
+
+    const formattedCashiers = cashiers.map(c => ({
+      id: c.id,
+      name: c.name,
+      sale: formatCurrency(c.sale),
+      cash: formatCurrency(c.cash),
+      voucher: formatCurrency(c.voucher)
+    }));
+
+    console.log('Formatted cashier data:', formattedCashiers);
+
+    res.json({
+      success: true,
+      data: formattedCashiers
+    });
+
+  } catch (error) {
+    console.error('Detailed cashiers error:', {
+      message: error.message,
+      stack: error.stack,
+      sql: error.sql,
+      errno: error.errno,
+      code: error.code
+    });
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to load cashier data',
+      error: process.env.NODE_ENV === 'development' ? error.message : null
+    });
+  }
+});
 
 export default router;
