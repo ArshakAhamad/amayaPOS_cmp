@@ -70,7 +70,7 @@ app.use('/api/returns', returnRoutes);
 app.use('/api/productMovement', productMovementRoutes);
 app.use('/api/profitLoss', profitLossRoutes);
 app.use('/api/sales', salesProfitRoutes);
-app.use('/api/cashier_summary', cashRoutes);
+app.use('/api/cashiers', cashRoutes);
 
 // Catch unmatched routes
 app.use((req, res) => {
