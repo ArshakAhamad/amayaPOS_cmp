@@ -19,7 +19,7 @@ import StoreRoutes from './routes/storeRoute.js';
 import storeTypeRoutes from './routes/storeTypeRoute.js';
 import POSRoutes from './routes/POSRoute.js';
 import purchaseRoutes from './routes/purchaseRoute.js';
-import returnsRouter from './routes/productReturnRoute.js';
+import returnRoutes from './routes/productReturnRoute.js';
 import productMovementRoutes from './routes/productMovementRoute.js';
 import profitLossRoutes from './routes/profitLossRoutes.js';
 import cashRoutes from './routes/cashRoute.js';
@@ -66,10 +66,10 @@ app.use('/api/', StoreRoutes);
 app.use('/api/', storeTypeRoutes);
 app.use('/api/', POSRoutes);
 app.use('/api/', purchaseRoutes);
-app.use('/api/returns', returnsRouter);
+app.use('/api/returns', returnRoutes);
 app.use('/api/productMovement', productMovementRoutes);
 app.use('/api/profitLoss', profitLossRoutes);
-app.use('/api/', salesProfitRoutes);
+app.use('/api/sales', salesProfitRoutes);
 app.use('/api/', cashRoutes);
 
 // Catch unmatched routes

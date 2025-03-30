@@ -1,139 +1,98 @@
 import express from 'express';
 import pool from '../config/db.js';
-import { format } from 'date-fns';
 
 const router = express.Router();
 
-// Middleware to ensure JSON responses
-router.use(express.json());
-
-// Helper function to format dates
-const formatDate = (date) => format(new Date(date), 'yyyy-MM-dd');
-
-// GET Sales Profit Report
 router.get('/', async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
+  const { startDate, endDate } = req.query;
 
-    // Validate inputs
+  try {
     if (!startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        message: 'Both startDate and endDate are required'
+        message: 'Start date and end date are required'
       });
     }
 
-    // Convert dates to proper format
-    const formattedStartDate = formatDate(startDate);
-    const formattedEndDate = formatDate(endDate);
-
-    console.log(`Fetching sales from ${formattedStartDate} to ${formattedEndDate}`);
-
-    // 1. Get Summary Data
-    const [summaryResult] = await pool.query(`
+    // Get summary data
+    const [summary] = await pool.query(`
       SELECT 
-        COALESCE(SUM(pi.price * pi.quantity), 0) AS productSales,
-        COALESCE(SUM(pi.discount), 0) AS voucherSales,
-        COALESCE(SUM(pi.quantity * COALESCE(p.last_cost, p.price * 0.6)), 0) AS cost,
-        COALESCE(SUM(pi.price * pi.quantity - pi.quantity * COALESCE(p.last_cost, p.price * 0.6))), 0) AS profit,
+        COALESCE(SUM(pi.price * pi.quantity), 0) as productSales,
+        COALESCE(SUM(CASE WHEN p.voucher_id IS NOT NULL THEN p.total_amount ELSE 0 END), 0) as voucherSales,
+        COALESCE(SUM(pr.last_cost * pi.quantity), 0) as cost,
+        COALESCE(SUM(pi.price * pi.quantity) - SUM(pr.last_cost * pi.quantity), 0) as profit
+      FROM payment_items pi
+      JOIN payments p ON pi.payment_id = p.id
+      JOIN products pr ON pi.product_id = pr.id
+      WHERE p.status = 'Active'
+        AND DATE(p.created_at) BETWEEN ? AND ?
+    `, [startDate, endDate]);
+
+    // Calculate profit percentage
+    const profitPercentage = summary[0].productSales > 0 
+      ? (summary[0].profit / summary[0].productSales) * 100 
+      : 0;
+
+    // Get receipt-wise sales with fixed CASE statement
+    const [receipts] = await pool.query(`
+      SELECT 
+        p.id,
+        DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i') as date,
+        p.payment_method as type,
+        p.receipt_number as reference,
+        COALESCE(SUM(pi.price * pi.quantity), 0) as sale,
+        COALESCE(SUM(pi.price * pi.quantity * (pr.discount/100)), 0) as discount,
+        COALESCE(SUM(pr.last_cost * pi.quantity), 0) as cost,
+        COALESCE(SUM(pi.price * pi.quantity) - SUM(pr.last_cost * pi.quantity), 0) as profit,
         CASE 
-          WHEN SUM(pi.price * pi.quantity) > 0 
+          WHEN COALESCE(SUM(pi.price * pi.quantity), 0) > 0 
           THEN ROUND(
-            (SUM(pi.price * pi.quantity - pi.quantity * COALESCE(p.last_cost, p.price * 0.6))) / 
-            SUM(pi.price * pi.quantity) * 100, 
+            ((COALESCE(SUM(pi.price * pi.quantity), 0) - COALESCE(SUM(pr.last_cost * pi.quantity), 0)) / 
+            COALESCE(SUM(pi.price * pi.quantity), 1)) * 100, 
             2
           )
           ELSE 0 
-        END AS profitPercentage
-      FROM payments
-      JOIN payment_items pi ON payments.id = pi.payment_id
-      JOIN products p ON pi.product_id = p.id
-      WHERE payments.status = 'Active'
-      AND DATE(payments.created_at) BETWEEN ? AND ?
-    `, [formattedStartDate, formattedEndDate]);
+        END as profit_percentage
+      FROM payment_items pi
+      JOIN payments p ON pi.payment_id = p.id
+      JOIN products pr ON pi.product_id = pr.id
+      WHERE p.status = 'Active'
+        AND DATE(p.created_at) BETWEEN ? AND ?
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+      LIMIT 1000
+    `, [startDate, endDate]);
 
-    // 2. Get Detailed Sales Data
-    const [salesData] = await pool.query(`
-      SELECT 
-        payments.id,
-        DATE_FORMAT(payments.created_at, '%Y-%m-%d') AS date,
-        'Sale' AS type,
-        payments.receipt_number AS reference,
-        COALESCE(SUM(pi.price * pi.quantity), 0) AS sale,
-        COALESCE(SUM(pi.discount), 0) AS discount,
-        COALESCE(SUM(pi.quantity * COALESCE(p.last_cost, p.price * 0.6))), 0) AS cost,
-        COALESCE(SUM(pi.price * pi.quantity - pi.quantity * COALESCE(p.last_cost, p.price * 0.6))), 0) AS profit,
-        CASE 
-          WHEN SUM(pi.price * pi.quantity) > 0 
-          THEN ROUND(
-            (SUM(pi.price * pi.quantity - pi.quantity * COALESCE(p.last_cost, p.price * 0.6))) / 
-            SUM(pi.price * pi.quantity) * 100, 
-            2
-          )
-          ELSE 0 
-        END AS profitPercentage
-      FROM payments
-      JOIN payment_items pi ON payments.id = pi.payment_id
-      JOIN products p ON pi.product_id = p.id
-      WHERE payments.status = 'Active'
-      AND DATE(payments.created_at) BETWEEN ? AND ?
-      GROUP BY payments.id
-      ORDER BY payments.created_at DESC
-    `, [formattedStartDate, formattedEndDate]);
-
-    // Prepare response
-    const response = {
+    res.json({
       success: true,
-      summary: {
-        productSales: parseFloat(summaryResult[0]?.productSales) || 0,
-        voucherSales: parseFloat(summaryResult[0]?.voucherSales) || 0,
-        cost: parseFloat(summaryResult[0]?.cost) || 0,
-        profit: parseFloat(summaryResult[0]?.profit) || 0,
-        profitPercentage: parseFloat(summaryResult[0]?.profitPercentage) || 0
-      },
-      sales: salesData.map(item => ({
-        id: item.id || 0,
-        date: item.date || '',
-        type: item.type || 'Sale',
-        reference: item.reference?.toString() || '',
-        sale: parseFloat(item.sale) || 0,
-        discount: parseFloat(item.discount) || 0,
-        cost: parseFloat(item.cost) || 0,
-        profit: parseFloat(item.profit) || 0,
-        profitPercentage: parseFloat(item.profitPercentage) || 0
-      }))
-    };
-
-    console.log('API Response:', JSON.stringify(response, null, 2));
-
-    res.setHeader('Content-Type', 'application/json');
-    res.status(200).json(response);
-
-  } catch (error) {
-    console.error('Server Error:', {
-      message: error.message,
-      stack: error.stack,
-      sql: error.sql
+      data: {
+        summary: {
+          productSales: Number(summary[0].productSales),
+          voucherSales: Number(summary[0].voucherSales),
+          cost: Number(summary[0].cost),
+          profit: Number(summary[0].profit),
+          profitPercentage: Number(profitPercentage.toFixed(2))
+        },
+        receipts: receipts.map(receipt => ({
+          ...receipt,
+          sale: Number(receipt.sale),
+          discount: Number(receipt.discount),
+          cost: Number(receipt.cost),
+          profit: Number(receipt.profit),
+          profit_percentage: Number(receipt.profit_percentage)
+        }))
+      }
     });
 
+  } catch (err) {
+    console.error('Database error:', err);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Database query failed',
+      error: err.message,
+      sql: err.sql // This will show the exact failing query
     });
   }
-});
-
-// Debug endpoint
-router.get('/test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'API is working',
-    data: {
-      test: 123,
-      items: ['a', 'b', 'c']
-    }
-  });
 });
 
 export default router;
