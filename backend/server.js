@@ -68,7 +68,7 @@ app.use('/api/', StoreRoutes);
 app.use('/api/', storeTypeRoutes);
 app.use('/api/', POSRoutes);
 app.use('/api/', purchaseRoutes);
-app.use('/api/product-returns', productReturnRoutes);
+app.use('/api/product_returns', productReturnRoutes);
 app.use('/api/productMovement', productMovementRoutes);
 app.use('/api/profitLoss', profitLossRoutes);
 app.use('/api/sales', salesProfitRoutes);
