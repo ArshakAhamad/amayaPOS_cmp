@@ -1,109 +1,109 @@
 import express from 'express';
-import pool from '../config/db.js'; // Import your database connection pool
+import pool from '../config/db.js';
+import authenticateToken from '../middlewares/authenticateToken.js';
 
 const router = express.Router();
 
-// POST /api/product-returns - Create a new product return
-router.post('/product-returns', async (req, res) => {
-  const { date, product, unitCost, quantity, totalCost, avgCost, stock } = req.body;
-
-  // Validate required fields
-  if (!date || !product || !unitCost || !quantity || !totalCost || !avgCost || !stock) {
-    return res.status(400).json({ success: false, message: 'All fields are required.' });
-  }
-
+// Get all product returns
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    // Insert the product return details into the database
-    const [result] = await pool.execute(
-      `INSERT INTO product_returns (date, product, unitCost, quantity, totalCost, avgCost, stock)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [date, product, unitCost, quantity, totalCost, avgCost, stock]
-    );
-
-    if (result.affectedRows > 0) {
-      res.status(201).json({ success: true, message: 'Product return created successfully.' });
-    } else {
-      res.status(500).json({ success: false, message: 'Failed to create product return.' });
-    }
-  } catch (err) {
-    console.error('Error creating product return:', err);
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
-  }
-});
-
-// GET /api/product-returns - Fetch all product returns
-router.get('/product-returns', async (req, res) => {
-  try {
-    const [productReturns] = await pool.execute(`
-      SELECT 
-        id,
-        date,
-        product,
-        unitCost,
-        quantity,
-        totalCost,
-        avgCost,
-        stock
-      FROM product_returns
+    const [returns] = await pool.query(`
+      SELECT pr.*, p.product_name 
+      FROM product-returns pr
+      JOIN products p ON pr.product_id = p.id
+      ORDER BY pr.date DESC
     `);
-
-    if (productReturns.length === 0) {
-      return res.status(404).json({ success: false, message: 'No product returns found.' });
-    }
-
-    res.status(200).json({ success: true, productReturns });
-  } catch (err) {
-    console.error('Error fetching product returns:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    
+    res.json({
+      success: true,
+      data: returns.map(item => ({
+        ...item,
+        unitCost: Number(item.unitCost),
+        totalCost: Number(item.totalCost),
+        avgCost: Number(item.avgCost)
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching product returns:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch product returns'
+    });
   }
 });
 
-// PUT /api/product-returns/:id - Update a product return
-router.put('/product-returns/:id', async (req, res) => {
-  const { id } = req.params;
-  const { date, product, unitCost, quantity, totalCost, avgCost, stock } = req.body;
-
-  // Validate required fields
-  if (!date || !product || !unitCost || !quantity || !totalCost || !avgCost || !stock) {
-    return res.status(400).json({ success: false, message: 'All fields are required.' });
-  }
-
+// Create new product return
+router.post('/', authenticateToken, async (req, res) => {
   try {
-    // Update the product return details in the database
-    const [result] = await pool.execute(
-      `UPDATE product_returns 
-       SET date = ?, product = ?, unitCost = ?, quantity = ?, totalCost = ?, avgCost = ?, stock = ? 
-       WHERE id = ?`,
-      [date, product, unitCost, quantity, totalCost, avgCost, stock, id]
+    const { date, product_id, unitCost, quantity, totalCost, avgCost, stock } = req.body;
+    
+    const [result] = await pool.query(
+      `INSERT INTO product-returns 
+       (date, product_id, unitCost, quantity, totalCost, avgCost, stock)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [date, product_id, unitCost, quantity, totalCost, avgCost, stock]
     );
-
-    if (result.affectedRows > 0) {
-      res.status(200).json({ success: true, message: 'Product return updated successfully.' });
-    } else {
-      res.status(404).json({ success: false, message: 'Product return not found.' });
-    }
-  } catch (err) {
-    console.error('Error updating product return:', err);
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    
+    // Update product stock
+    await pool.query(
+      `UPDATE products SET stock = stock + ? WHERE id = ?`,
+      [quantity, product_id]
+    );
+    
+    res.status(201).json({
+      success: true,
+      message: 'Product return created successfully',
+      data: { id: result.insertId }
+    });
+  } catch (error) {
+    console.error('Error creating product return:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create product return'
+    });
   }
 });
 
-// DELETE /api/product-returns/:id - Delete a product return
-router.delete('/product-returns/:id', async (req, res) => {
-  const { id } = req.params;
-
+// Delete product return
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    // Delete the product return from the database
-    const [result] = await pool.execute(`DELETE FROM product_returns WHERE id = ?`, [id]);
-
-    if (result.affectedRows > 0) {
-      res.status(200).json({ success: true, message: 'Product return deleted successfully.' });
-    } else {
-      res.status(404).json({ success: false, message: 'Product return not found.' });
+    const { id } = req.params;
+    
+    // First get the return data to adjust stock
+    const [returnData] = await pool.query(
+      `SELECT product_id, quantity FROM product-returns WHERE id = ?`,
+      [id]
+    );
+    
+    if (returnData.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product return not found'
+      });
     }
-  } catch (err) {
-    console.error('Error deleting product return:', err);
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    
+    // Delete the return
+    await pool.query(
+      `DELETE FROM product_returns WHERE id = ?`,
+      [id]
+    );
+    
+    // Revert stock adjustment
+    await pool.query(
+      `UPDATE products SET stock = stock - ? WHERE id = ?`,
+      [returnData[0].quantity, returnData[0].product_id]
+    );
+    
+    res.json({
+      success: true,
+      message: 'Product return deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting product return:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete product return'
+    });
   }
 });
 

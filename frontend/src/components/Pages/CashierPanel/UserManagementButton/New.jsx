@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import axios from "axios";
 
-const CashierNewSalesRep = () => {
+const NewSalesRep = () => {
   const [salesRepDetails, setSalesRepDetails] = useState({
     name: "",
     username: "",
@@ -9,7 +10,7 @@ const CashierNewSalesRep = () => {
     email: "",
     phone: "",
     remarks: "",
-    notificationMethod: "", // ✅ New state for radio button selection
+    notificationMethod: "", // New state for radio button selection
   });
 
   const handleChange = (e) => {
@@ -20,21 +21,47 @@ const CashierNewSalesRep = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(salesRepDetails);
+    try {
+      // Log the salesRepDetails to check the data
+      console.log("Sending sales rep details:", salesRepDetails);
+
+      // Send the data to the backend via API
+      const response = await axios.post(
+        "http://localhost:5000/api/sales-rep", // Backend API endpoint
+        salesRepDetails, // Send the salesRepDetails as the body of the request
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Response from API:", response.data);
+
+      // Handle success (redirect or show success message)
+      if (response.data.success) {
+        alert("Sales Rep added successfully!");
+      } else {
+        alert("Failed to add Sales Rep.");
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   return (
     <div className="main-content p-6 flex justify-center items-center min-h-screen">
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-3xl">
-        {/* 🔷 Sales Rep Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <h3 className="text-2xl font-semibold text-gray-700">Sales Rep Setup</h3>
           <p className="text-sm text-gray-500 mt-1">
             You can create a New Sales Rep from here
           </p>
           <br />
+
 
           {/* Name & Username */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,55 +162,44 @@ const CashierNewSalesRep = () => {
             />
           </div>
 
-          <div className="flex flex-col space-y-2">
-  <label className="flex items-center">
-    
-      <input
-        type="radio"
-        name="notificationMethod"
-        value="email"
-        checked={salesRepDetails.notificationMethod === "email"}
-        onChange={handleChange}
-        className="mr-2 w-5 h-5 accent-blue-600"
-      />
-      <h4>
-      Send an email notification with login details to the Sales Rep</h4>
-  </label>
+{/* Notification Method */}
+<div className="flex flex-col space-y-2">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="notificationMethod"
+                value="email"
+                checked={salesRepDetails.notificationMethod === "email"}
+                onChange={handleChange}
+                className="mr-2 w-5 h-5 accent-blue-600"
+              />
+              <h4>Send an email notification with login details to the Sales Rep</h4>
+            </label>
 
-  <label className="flex items-center">
-    
-    <input
-      type="radio"
-      name="notificationMethod"
-      value="manual"
-      checked={salesRepDetails.notificationMethod === "manual"}
-      onChange={handleChange}
-      className="mr-2 w-5 h-5 accent-blue-600"
-    />
-    <h4>Send login details to the Sales Rep manually</h4>
-  </label>
-</div>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="notificationMethod"
+                value="manual"
+                checked={salesRepDetails.notificationMethod === "manual"}
+                onChange={handleChange}
+                className="mr-2 w-5 h-5 accent-blue-600"
+              />
+              <h4>Send login details to the Sales Rep manually</h4>
+            </label>
+          </div>
 
-
-          {/* Buttons */}
-        
-          <button
-            type="submit"
-            className="w-full py-3 mt-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition"
-          >
+          {/* Submit buttons */}
+          <button type="submit" className="w-full py-3 mt-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700">
             New
           </button>
-          <button
-            type="submit"
-            className="w-full py-3 mt-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition"
-          >
+          <button type="submit" className="w-full py-3 mt-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700">
             Save
           </button>
-          
         </form>
       </div>
     </div>
   );
 };
 
-export default CashierNewSalesRep;
+export default NewSalesRep;

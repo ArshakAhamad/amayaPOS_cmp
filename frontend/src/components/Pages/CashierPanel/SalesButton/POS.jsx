@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom"; 
 
-const CashierPOS = () => {
+const POS = () => {
   const [cashInHand, setCashInHand] = useState(0);
   const navigate = useNavigate(); // 
 
   const handleStartDay = () => {
-    navigate("/CashierPanel/PosPay"); // 
+    navigate("/AdminPanel/PosPay"); // 
   };
 
   return (
@@ -16,7 +16,7 @@ const CashierPOS = () => {
 
       {/* Date Input & Button */}
       <div className="sales-controls mb-6 flex flex-wrap items-center justify-between">
-        <label className="text-lg font-medium">LKR</label>
+      <label className="text-lg font-medium">LKR</label>
         <input
           type="number"
           className="date-picker p-2 border rounded text-sm w-24"
@@ -34,4 +34,4 @@ const CashierPOS = () => {
   );
 };
 
-export default CashierPOS;
+export default POS;

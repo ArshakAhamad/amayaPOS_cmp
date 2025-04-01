@@ -1,11 +1,14 @@
 import React, { useState } from "react";
+import axios from "axios"; // Import axios to send requests
 
-const CashierNewCustomer = () => {
+const NewCustomer = () => {
   const [customerDetails, setCustomerDetails] = useState({
     customerName: "",
     phone: "",
     address: "",
   });
+  const [message, setMessage] = useState(""); // State to store messages (success or error)
+  const [messageType, setMessageType] = useState(""); // State to store message type ("success" or "error")
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -15,24 +18,49 @@ const CashierNewCustomer = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(customerDetails);
+    try {
+      const response = await axios.post('http://localhost:5000/api/customers', customerDetails);
+
+      if (response.data.success) {
+        setMessage(response.data.message); // Set success message
+        setMessageType("success"); // Set message type to success
+        setCustomerDetails({ customerName: "", phone: "", address: "" }); // Clear form fields
+      } else {
+        setMessage(response.data.message); // Set error message
+        setMessageType("error"); // Set message type to error
+      }
+    } catch (err) {
+      setMessage("An error occurred while creating the customer.");
+      setMessageType("error");
+      console.error('Error creating customer:', err);
+    }
   };
 
   return (
     <div className="main-content p-6 flex justify-center items-center min-h-screen">
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-3xl">
 
-
         {/* 🔷 Customer Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-  {/* 🔷 Centered Heading */}
-  <div className="text-center mb-6">
-          <h3 className="text-2xl font-semibold text-gray-700">Create Customer</h3>
-          <p className="text-sm text-gray-500 mt-1">You can create New Customers from here</p>
-        </div>
-        <br></br>
+          {/* 🔷 Centered Heading */}
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-semibold text-gray-700">Create Customer</h3>
+            <p className="text-sm text-gray-500 mt-1">You can create New Customers from here</p>
+          </div>
+
+          {/* Message */}
+          {message && (
+            <div
+              className={`p-4 rounded-lg mb-4 ${
+                messageType === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              }`}
+            >
+              {message}
+            </div>
+          )}
+
           {/* Customer Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Customer Name</label>
@@ -89,11 +117,10 @@ const CashierNewCustomer = () => {
               Save
             </button>
           </div>
-
         </form>
       </div>
     </div>
   );
 };
 
-export default CashierNewCustomer;
+export default NewCustomer;
