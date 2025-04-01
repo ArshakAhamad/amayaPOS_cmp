@@ -30,7 +30,8 @@ const ProductReturn = () => {
             quantity: 1,
             total_cost: 0,
             avg_cost: 0,
-            stock: 0
+            stock: 0,
+            id: Date.now() // Temporary ID for new items
           }
         ]);
         
@@ -71,12 +72,27 @@ const ProductReturn = () => {
         quantity: 1,
         total_cost: 0,
         avg_cost: 0,
-        stock: 0
+        stock: 0,
+        id: Date.now() // Temporary ID for new items
       }
     ]);
   };
 
-  const handleRemoveProduct = (index) => {
+  const handleRemoveProduct = async (index) => {
+    const productToRemove = products[index];
+    
+    // If the product has an ID (exists in database), delete from backend
+    if (productToRemove.id && typeof productToRemove.id === 'number') {
+      try {
+        await axios.delete(`http://localhost:5000/api/product_returns/${productToRemove.id}`);
+      } catch (err) {
+        console.error("Error deleting product return:", err);
+        alert("Failed to delete product return from server");
+        return;
+      }
+    }
+    
+    // Remove from local state
     const updatedProducts = products.filter((_, i) => i !== index);
     setProducts(updatedProducts);
   };
@@ -111,8 +127,12 @@ const ProductReturn = () => {
       
       // Submit each product return
       await Promise.all(
-        validProducts.map(product => 
-          axios.post("http://localhost:5000/api/product_returns", {
+        validProducts.map(product => {
+          if (product.id && typeof product.id === 'number') {
+            // Skip existing items (they're already in database)
+            return Promise.resolve();
+          }
+          return axios.post("http://localhost:5000/api/product_returns", {
             date: product.date,
             product_id: product.product_id,
             unit_cost: product.unit_cost,
@@ -120,8 +140,8 @@ const ProductReturn = () => {
             total_cost: product.total_cost,
             avg_cost: product.avg_cost,
             stock: product.stock
-          })
-        )
+          });
+        })
       );
       
       alert("Product returns submitted successfully!");
@@ -208,7 +228,7 @@ const ProductReturn = () => {
             </thead>
             <tbody>
               {products.map((product, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50 transition">
+                <tr key={product.id || index} className="border-b hover:bg-gray-50 transition">
                   <td className="px-6 py-3">
                     <input
                       type="date"
