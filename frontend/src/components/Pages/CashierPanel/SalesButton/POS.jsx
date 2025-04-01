@@ -6,7 +6,7 @@ const POS = () => {
   const navigate = useNavigate(); // 
 
   const handleStartDay = () => {
-    navigate("/AdminPanel/PosPay"); // 
+    navigate("/CashierPanel/PosPay"); // 
   };
 
   return (
