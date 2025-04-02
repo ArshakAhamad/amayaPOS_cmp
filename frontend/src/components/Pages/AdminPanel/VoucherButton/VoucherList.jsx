@@ -12,14 +12,12 @@ const VoucherList = () => {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  // Helper function to safely format numbers
   const formatNumber = (value) => {
     if (value === null || value === undefined) return 'N/A';
     const num = Number(value);
     return isNaN(num) ? 'N/A' : num.toFixed(2);
   };
 
-  // Calculate expire date
   const calculateExpireDate = (issuedDate, expirePeriod) => {
     if (!issuedDate || !expirePeriod) return 'N/A';
     try {
@@ -31,13 +29,11 @@ const VoucherList = () => {
     }
   };
 
-  // Fetch vouchers from backend
   useEffect(() => {
     const fetchVouchers = async () => {
       try {
         const response = await axios.get('http://localhost:5000/api/vouchers');
         if (response.data.success) {
-          // Validate and normalize voucher data
           const validatedVouchers = response.data.vouchers.map(voucher => ({
             ...voucher,
             value: Number(voucher.value) || 0,
@@ -56,23 +52,15 @@ const VoucherList = () => {
     fetchVouchers();
   }, []);
 
-  // Handle cancel voucher
   const handleCancel = async (voucherId) => {
     if (!window.confirm('Are you sure you want to cancel this voucher?')) return;
     
     try {
-      const token = localStorage.getItem("jwt_token");
-      if (!token) {
-        setError("Authentication required");
-        return;
-      }
-
       const response = await axios.put(
         `http://localhost:5000/api/vouchers/${voucherId}/cancel`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        {}
       );
-
+  
       if (response.data.success) {
         setVouchers(prev => prev.map(v => 
           v.id === voucherId ? { ...v, status: "Cancelled", active: "Inactive" } : v
@@ -84,8 +72,16 @@ const VoucherList = () => {
         setError(response.data.message || "Failed to cancel voucher.");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "An error occurred while cancelling the voucher.");
       console.error("Error cancelling voucher:", err);
+      if (err.response) {
+        if (err.response.status === 404) {
+          setError("Voucher not found or endpoint doesn't exist");
+        } else {
+          setError(err.response.data?.message || "An error occurred while cancelling the voucher.");
+        }
+      } else {
+        setError("Network error. Please check your connection.");
+      }
     }
   };
 
@@ -171,7 +167,6 @@ const VoucherList = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Filter and paginate vouchers
   const filteredVouchers = vouchers.filter(voucher => {
     const searchLower = searchTerm.toLowerCase();
     return (

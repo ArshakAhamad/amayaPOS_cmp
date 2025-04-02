@@ -52,11 +52,23 @@ router.get('/vouchers', async (req, res) => {
 });
 
 // PUT /api/vouchers/:id/cancel - Cancel a voucher
-router.put('/:id/cancel', authenticateToken, async (req, res) => {
+router.put('/vouchers/:id/cancel', async (req, res) => {
   try {
     const { id } = req.params;
+    const [voucher] = await pool.execute('SELECT status FROM vouchers WHERE id = ?', [id]);
 
-    // Update the voucher's status and active fields
+    if (voucher.length === 0) {
+      return res.status(404).json({ success: false, message: 'Voucher not found.' });
+    }
+
+    if (voucher[0].status === 'Cancelled') {
+      return res.status(400).json({ success: false, message: 'Voucher is already cancelled.' });
+    }
+
+    if (voucher[0].status === 'Redeemed') {
+      return res.status(400).json({ success: false, message: 'Redeemed vouchers cannot be cancelled.' });
+    }
+
     const [result] = await pool.execute(
       'UPDATE vouchers SET status = ?, active = ? WHERE id = ?',
       ['Cancelled', 'Inactive', id]
@@ -65,7 +77,7 @@ router.put('/:id/cancel', authenticateToken, async (req, res) => {
     if (result.affectedRows > 0) {
       res.json({ success: true, message: 'Voucher cancelled successfully.' });
     } else {
-      res.status(404).json({ success: false, message: 'Voucher not found.' });
+      res.status(500).json({ success: false, message: 'Failed to cancel voucher.' });
     }
   } catch (err) {
     console.error('Error cancelling voucher:', err);
