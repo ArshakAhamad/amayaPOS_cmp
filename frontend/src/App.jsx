@@ -57,7 +57,7 @@ import "./App.css";
 import PosPay from './components/Pages/AdminPanel/Sales&ProfitButton/PosPay';
 import CashierPosPay from './components/Pages/CashierPanel/SalesButton/PosPay';
 import CashierPOSReturn from './components/Pages/CashierPanel/SalesButton/POSReturn';
-import { Logout } from './components/Auth/Logout';
+import  {Logout}  from './components/Auth/Logout';
 import SupplierHY from './components/Pages/AdminPanel/SupplierButton/SupplierBills';
 
 // Import the CartProvider
