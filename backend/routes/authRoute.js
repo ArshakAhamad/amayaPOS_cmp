@@ -71,54 +71,82 @@ const authenticateUser = async (req, res, next) => {
 };
 
 // Enhanced role checking endpoint
-router.get('/check-role', authenticateUser, async (req, res) => {
+// Standardized response format
+const createResponse = (success, data = {}, error = null) => {
+    return {
+      meta: {
+        success: Boolean(success),
+        timestamp: new Date().toISOString(),
+        code: success ? 'S1000' : (error?.code || 'E1000')
+      },
+      data: success ? {
+        role: data.role,
+        isSalesRep: Boolean(data.isSalesRep),
+        store: data.store || null,
+        username: data.username
+      } : null,
+      error: !success ? {
+        message: error?.message || 'An error occurred',
+        details: process.env.NODE_ENV === 'development' ? error?.details : undefined
+      } : null
+    };
+  };
+  
+  router.get('/check-role', authenticateUser, async (req, res) => {
     try {
-        // Check sales rep status only if needed (optimization)
-        if (req.user.role === 'Cashier') {
-            return res.json({
-                success: true,
-                role: 'Cashier',
-                isSalesRep: true, // Cashiers are always considered sales reps
-                store: 'Default Store', // Or fetch from DB if cashiers have specific stores
-                username: req.user.username
-            });
-        }
-
-        // For Admins, check sales rep allocation
-        const [salesRep] = await pool.execute(
-            `SELECT store FROM sales_rep 
-             WHERE user_name = ? AND status = 'Active'`,
-            [req.user.username]
+      // 1. Get user from database
+      const [users] = await pool.execute(
+        `SELECT role FROM system_user 
+         WHERE id = ? AND status = 'Active'`,
+        [req.user.id]
+      );
+  
+      if (users.length === 0) {
+        return res.status(403).json(createResponse(false, null, {
+          code: 'E1001',
+          message: 'User not found or inactive'
+        }));
+      }
+  
+      const user = users[0];
+      const responseData = {
+        role: user.role,
+        username: req.user.username,
+        isSalesRep: user.role === 'Cashier'
+      };
+  
+      // 2. Additional check for Admins
+      if (user.role === 'Admin') {
+        const [salesReps] = await pool.execute(
+          `SELECT store FROM sales_rep 
+           WHERE user_name = ? AND status = 'Active' 
+           LIMIT 1`,
+          [req.user.username]
         );
-
-        const isSalesRep = salesRep.length > 0;
-        
-        if (req.user.role === 'Admin' && !isSalesRep) {
-            return res.json({
-                success: true,
-                role: 'Admin',
-                isSalesRep: false,
-                store: null,
-                username: req.user.username
-            });
-        }
-
-        res.json({
-            success: true,
-            role: req.user.role,
-            isSalesRep,
-            store: isSalesRep ? salesRep[0].store : null,
-            username: req.user.username
-        });
-
+        responseData.isSalesRep = salesReps.length > 0;
+        responseData.store = responseData.isSalesRep ? salesReps[0].store : null;
+      }
+  
+      // 3. Send standardized success response
+      return res.status(200).json(createResponse(true, responseData));
+  
     } catch (error) {
-        console.error('Role check error:', error);
-        res.status(500).json({ 
-            success: false,
-            message: 'Error checking user role',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+      console.error('[AUTH] Role check error:', error);
+      return res.status(500).json(createResponse(false, null, {
+        code: 'E5000',
+        message: 'Internal server error',
+        details: error.message
+      }));
     }
-});
+  });
+  
+// Response validation function
+function validateResponse(response) {
+    const requiredFields = ['success', 'role', 'isSalesRep'];
+    return requiredFields.every(field => field in response) &&
+           typeof response.success === 'boolean' &&
+           ['Admin', 'Cashier'].includes(response.role) &&
+           typeof response.isSalesRep === 'boolean';
+}
 
 export default router;
