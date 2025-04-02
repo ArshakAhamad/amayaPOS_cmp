@@ -56,6 +56,7 @@ import "./index.css";
 import "./App.css";
 import PosPay from './components/Pages/AdminPanel/Sales&ProfitButton/PosPay';
 import CashierPosPay from './components/Pages/CashierPanel/SalesButton/PosPay';
+import CashierPOSReturn from './components/Pages/CashierPanel/SalesButton/POSReturn';
 import { Logout } from './components/Auth/Logout';
 import SupplierHY from './components/Pages/AdminPanel/SupplierButton/SupplierBills';
 
@@ -166,7 +167,7 @@ function App() {
             <Route path="ProductMovement" element={<ProductMovement />} />
             <Route path="POS" element={<CashierPOS />} />
             <Route path="PosPay" element={<CashierPosPay />} />
-            <Route path="POSReturn" element={<POSReturn />} />
+            <Route path="POSReturn" element={<CashierPOSReturn />} />
             <Route path="POSReceipts" element={<CashierPOSReceipts />} />
             <Route path="POSReorders" element={<CashierPOSReorders />} />
             <Route path="POSExpenses" element={<CashierPOSExpenses />} />

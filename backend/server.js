@@ -76,7 +76,7 @@ app.use('/api/sales', salesProfitRoutes);
 app.use('/api/cashiers', cashRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/purchase-bills', purchaseBillsRoutes);
-app.use('/api/auth', authRoutes);
+
 // Catch unmatched routes
 app.use((req, res) => {
   res.status(404).json({ error: 'API route not found' });
