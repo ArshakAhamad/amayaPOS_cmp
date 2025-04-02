@@ -112,7 +112,7 @@ const NewSalesRep = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Sales Rep Name
+                Username 
               </label>
               <input
                 type="text"
@@ -120,22 +120,23 @@ const NewSalesRep = () => {
                 value={salesRepDetails.name}
                 onChange={handleChange}
                 className="w-full p-3 border border-gray-300 rounded-lg"
-                placeholder="Enter Sales Rep Name"
+                placeholder="Enter Username"
                 required
               />
             </div>
+            <p className="text-xs text-gray-500">Username cannot be changed once created</p>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Username</label>
+              <label className="block text-sm font-medium text-gray-700">Sales Rep Name</label>
               <input
                 type="text"
                 name="username"
                 value={salesRepDetails.username}
                 onChange={handleChange}
                 className="w-full p-3 border border-gray-300 rounded-lg"
-                placeholder="Enter Username"
+                placeholder="Enter Salesrep name"
                 required
               />
-              <p className="text-xs text-gray-500">Username cannot be changed once created</p>
+             
             </div>
           </div>
 
