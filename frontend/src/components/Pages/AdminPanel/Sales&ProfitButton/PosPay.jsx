@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import React, { useState, useEffect, useContext } from "react";
 import Popup from "reactjs-popup";
 import { motion } from "framer-motion";
@@ -5,7 +6,7 @@ import "reactjs-popup/dist/index.css";
 import { CartContext } from "../../../../contexts/CartContext";
 
 const PosPay = () => {
-  const { cart, addToCart, updateQuantity, removeFromCart } = useContext(CartContext);
+  const { cart, addToCart, updateQuantity, removeFromCart, clearCart } = useContext(CartContext);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [isPopupOpen, setPopupOpen] = useState(false);
   const [products, setProducts] = useState([]);
@@ -13,6 +14,8 @@ const PosPay = () => {
   const [cashPayment, setCashPayment] = useState("");
   const [cardPayment, setCardPayment] = useState("");
   const [giftVoucher, setGiftVoucher] = useState("");
+  const [heldOrders, setHeldOrders] = useState([]);
+  const [isHoldOrderPopupOpen, setHoldOrderPopupOpen] = useState(false);
 
   // Fetch products from the backend
   useEffect(() => {
@@ -66,40 +69,83 @@ const PosPay = () => {
     }
   };
 
-  // Handle payment submission
-  const handlePayment = async () => {
-    const paymentMethod = "Cash";
-    const totalAmount = calculateTotal();
+// Handle payment submission
+const handlePayment = async () => {
+  const paymentMethod = cashPayment ? "Cash" : "Card"; 
+  const totalAmount = calculateTotal();
 
-    try {
-      const response = await fetch("http://localhost:5000/api/payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          paymentMethod,
-          totalAmount,
-          cartItems: cart,
-          customer: "Walk-In-Customer", // Default value
-          phone: customerPhone, // From form input
-          receiptNumber: 2865, // Default value
-          cash: cashPayment, // From form input
-          card: cardPayment, // From form input
-        }),
-      });
+  try {
+    const response = await fetch("http://localhost:5000/api/payment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        paymentMethod,
+        totalAmount,
+        cartItems: cart,
+        customer: "Walk-In-Customer",
+        phone: customerPhone,
+        receiptNumber: 2865,
+        cash: cashPayment,
+        cardNumber: cardPayment, // Send card number (not amount)
+      }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (data.success) {
-        alert("Payment processed successfully!");
-        setPopupOpen(false);
-      } else {
-        alert("Failed to process payment.");
-      }
-    } catch (err) {
-      console.error("Error processing payment:", err);
-      alert("Server error. Please try again.");
+    if (data.success) {
+      alert("Payment processed successfully!");
+      setPopupOpen(false);
+      setCustomerPhone("");
+      setCashPayment("");
+      setCardPayment("");
+      setGiftVoucher("");
+         }     else {
+      alert("Payment failed: " + (data.message || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Payment error:", err);
+    alert("Payment error: " + err.message);
+  }
+  // Add this check
+  if (typeof clearCart === 'function') {
+    clearCart();
+  } else {
+    console.error('clearCart is not a function');
+    // Fallback: manually set cart to empty if context fails
+    if (typeof updateCartState === 'function') {
+      updateCartState([]); // If you have another way to update cart
+    }
+  }
+};
+
+  // Handle hold order
+  const handleHoldOrder = () => {
+    if (cart.length === 0) {
+      alert("Cart is empty. Add items before holding order.");
+      return;
+    }
+
+    const orderId = uuidv4(); // Generate unique ID
+    const newHeldOrder = {
+      id: orderId,
+      items: [...cart],
+      total: calculateTotal(),
+      timestamp: new Date().toLocaleString()
+    };
+
+    setHeldOrders([...heldOrders, newHeldOrder]);
+    clearCart();
+    alert(`Order held successfully! Order ID: ${orderId}`);
+  };
+
+  // Retrieve held order
+  const retrieveHeldOrder = (orderId) => {
+    const order = heldOrders.find(order => order.id === orderId);
+    if (order) {
+      order.items.forEach(item => addToCart(item));
+      setHeldOrders(heldOrders.filter(order => order.id !== orderId));
     }
   };
 
@@ -126,6 +172,28 @@ const PosPay = () => {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Held Orders Section */}
+          <div className="mt-4 bg-white p-4 rounded-lg shadow">
+            <h3 className="font-bold mb-2">Held Orders</h3>
+            {heldOrders.length === 0 ? (
+              <p className="text-gray-500">No held orders</p>
+            ) : (
+              <ul className="space-y-2">
+                {heldOrders.map(order => (
+                  <li key={order.id} className="flex justify-between items-center p-2 border-b">
+                    <span>Order #{order.id.slice(0, 8)}</span> <br></br>
+                    <button 
+                      onClick={() => retrieveHeldOrder(order.id)}
+                      className="bg-blue-500 text-white px-2 py-1 rounded text-sm"
+                    >
+                      Retrieve Order
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
@@ -208,7 +276,11 @@ const PosPay = () => {
             <div><span>_______________________________________</span></div>
 
             <h3>Pay Gift Voucher</h3>
-            <input type="text" placeholder="Voucher ID" className="w-full p-3 border border-gray-400 rounded-md mt-2" />
+            <input 
+              type="text" 
+              placeholder="Voucher ID" 
+              className="w-full p-3 border border-gray-400 rounded-md mt-2" 
+            />
 
             <div><span>___________________________________________</span></div>
 
@@ -227,6 +299,7 @@ const PosPay = () => {
             <button
               className="w-full px-4 py-3 font-semibold rounded-md transition duration-300 
              border border-white text-white bg-blue-500 hover:bg-blue-600 mt-2"
+              onClick={handleHoldOrder}
             >
               HOLD THE ORDER (H)
             </button>
@@ -234,109 +307,185 @@ const PosPay = () => {
             <div><span>___________________________________________</span></div>
 
             <h3>Activate Gift Card</h3>
-            <input type="text" placeholder="Voucher ID" className="w-full p-3 border border-gray-400 rounded-md mt-2" />
+            <input 
+              type="text" 
+              placeholder="Voucher ID" 
+              className="w-full p-3 border border-gray-400 rounded-md mt-2" 
+            />
           </div>
         </div>
       </div>
 
       {/* Popup for Payment */}
       <Popup
-        open={isPopupOpen}
-        closeOnDocumentClick
-        onClose={() => setPopupOpen(false)}
-        modal
-        lockScroll
-        contentStyle={{
-          maxWidth: "500px",
-          width: "90%",
-          padding: "25px",
-          borderRadius: "12px",
-          background: "white",
-          boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.3)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-        }}
-        overlayStyle={{
-          background: "rgba(0, 0, 0, 0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+  open={isPopupOpen}
+  closeOnDocumentClick
+  onClose={() => {
+    setPopupOpen(false);
+    setCustomerPhone("");
+    setCashPayment("");
+    setCardPayment("");
+    setGiftVoucher("");
+  }}
+  modal
+  lockScroll
+  contentStyle={{
+    maxWidth: "500px",
+    width: "90%",
+    padding: "15px",
+    height: "80vh",
+    borderRadius: "12px",
+    background: "white",
+    boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.3)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+  }}
+  overlayStyle={{
+    background: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  }}
+>
+{(close) => {
+  // Calculate balance based ONLY on cash payment
+  const totalAmount = parseFloat(calculateTotal());
+  const cashAmount = parseFloat(cashPayment) || 0;
+  const balance = cashAmount - totalAmount; // Only use cash payment for balance
+  
+  // Determine balance display
+  const balanceClass = balance >= 0 
+    ? "text-green-600 bg-green-100 border-green-500" 
+    : "text-red-600 bg-red-100 border-red-500";
+  
+  const balanceMessage = balance >= 0 
+    ? `Change: LKR ${balance.toFixed(2)}` 
+    : `Balance Due: LKR ${Math.abs(balance).toFixed(2)}`;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="w-full"
       >
-        {(close) => (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="w-full"
+        <h3 className="text-xl font-semibold mb-4">PAYMENT DETAILS</h3>
+        <span>----------------------------------------------------------------------------</span>
+        <div className="w-full mb-4 bg-gray-100 p-4 rounded-lg">
+          <div className="flex justify-between mb-2">
+            <span className="font-medium">Subtotal:</span>
+            
+            <span>LKR {totalAmount.toFixed(2)}</span>
+          </div> <br></br>
+          {/*<div className="flex justify-between mb-2">
+            <span className="font-medium">Tax:</span>
+            <span>LKR 0.00</span>
+          </div>*/}
+          <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2">
+            <span>Total:</span>
+            <span>LKR {totalAmount.toFixed(2)}</span>
+          </div>
+        </div>
+        <span>----------------------------------------------------------------------------</span>
+        <div className="w-full border-t border-gray-300 my-4"></div>
+
+        <div className="flex flex-col space-y-4 w-full">
+          <div>
+            <label htmlFor="customerPhone" className="block text-left mb-1 font-medium">Customer Phone:</label>
+            <input
+              type="text"
+              id="customerPhone"
+              placeholder="Enter Phone Number"
+              className="w-full p-3 border border-gray-300 rounded-lg"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+            />
+          </div>  <br></br>
+
+          <div className="grid grid-cols-2 gap-4">
+  <div>
+    <label htmlFor="cashPayment" className="block text-left mb-1 font-medium">Cash Amount:</label>
+    <input
+      type="number"
+      id="cashPayment"
+      placeholder="Enter Cash Amount"
+      className="w-full p-3 border border-gray-300 rounded-lg"
+      value={cashPayment}
+      onChange={(e) => setCashPayment(e.target.value)}
+      min="0"
+      step="0.01"
+    />
+  </div> <br></br>
+  <div>
+  <label htmlFor="cardPayment" className="block text-left mb-1 font-medium">
+    Card Number:
+  </label>
+  <input
+    type="text"
+    id="cardPayment"
+    placeholder="Enter Card Number"
+    className="w-full p-3 border border-gray-300 rounded-lg"
+    value={cardPayment}
+    onChange={(e) => setCardPayment(e.target.value)}
+    pattern="[0-9]{13,19}"
+    inputMode="numeric"
+  />
+</div>
+</div>  <br></br>
+
+          <div>
+            <label htmlFor="giftVoucher" className="block text-left mb-1 font-medium">Gift Voucher:</label>
+            <input
+              type="text"
+              id="giftVoucher"
+              placeholder="Enter Voucher ID"
+              className="w-full p-3 border border-gray-300 rounded-lg"
+              value={giftVoucher}
+              onChange={(e) => setGiftVoucher(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Dynamic Balance Display */}
+        <div className={`w-full mt-4 p-3 rounded-md border ${balanceClass}`}>
+          <p className="text-lg font-bold">
+            {balanceMessage}
+          </p>
+          {balance >= 0 && (
+            <p className="text-sm mt-1">Please give customer {balanceMessage}</p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-4 mt-6">
+          <button 
+            className="px-6 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-colors"
+            onClick={() => {
+              close();
+              setCustomerPhone("");
+              setCashPayment("");
+              setCardPayment("");
+              setGiftVoucher("");
+            }}
           >
-            <h3 className="text-xl font-semibold mb-4">PAY</h3>
-
-            <div className="flex flex-col space-y-4">
-              <label htmlFor="username">Customer Phone : </label>
-              <input
-                type="text"
-                placeholder="Enter PhoneNo"
-                className="w-full p-3 border border-gray-300 rounded-lg"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-              /> <br></br>
-              <br></br>
-              <label htmlFor="username">Cash Payment (C) : </label>
-              <input
-                type="number"
-                placeholder="Enter Cash"
-                className="w-full p-3 border border-gray-300 rounded-lg"
-                value={cashPayment}
-                onChange={(e) => setCashPayment(e.target.value)}
-              /><br></br>
-              <br></br>
-              <label htmlFor="username">Card Payment : </label>
-              <input
-                type="number"
-                placeholder="Enter CardNo"
-                className="w-full p-3 border border-gray-300 rounded-lg"
-                value={cardPayment}
-                onChange={(e) => setCardPayment(e.target.value)}
-              /><br></br>
-              <br></br>
-              <label htmlFor="username">Total Amount : </label>
-              <input
-                type="number"
-                placeholder=""
-                className="w-full p-3 border border-gray-300 rounded-lg"
-                value={calculateTotal()}
-                readOnly
-              /><br></br>
-              <br></br>
-              <label htmlFor="username">Gift Voucher : </label>
-              <input
-                type="number"
-                placeholder="VoucherID"
-                className="w-full p-3 border border-gray-300 rounded-lg"
-                value={giftVoucher}
-                onChange={(e) => setGiftVoucher(e.target.value)}
-              /><br></br>
-            </div>
-
-            <p className="text-lg font-bold text-red-600 bg-red-100 border-red-500 p-3 rounded-md mt-4">
-              Balance: LKR -200
-            </p>
-
-            <div className="flex justify-end gap-4 mt-4">
-              <button className="px-6 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500" onClick={() => setPopupOpen(false)}>
-                Close
-              </button>
-              <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" onClick={handlePayment}>
-                PAY
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </Popup>
+            Cancel
+          </button>
+          <button 
+            className={`px-6 py-2 text-white rounded-md transition-colors ${
+              balance >= 0 ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
+            }`}
+            onClick={handlePayment}
+            disabled={balance < 0}
+          >
+            Complete Payment
+          </button>
+        </div>
+      </motion.div>
+    );
+  }}
+</Popup>
     </div>
   );
 };

@@ -10,7 +10,7 @@ const NewSalesRep = () => {
     email: "",
     phone: "",
     remarks: "",
-    notificationMethod: "", // New state for radio button selection
+    notificationMethod: "",
   });
 
   const handleChange = (e) => {
@@ -21,34 +21,79 @@ const NewSalesRep = () => {
     });
   };
 
+  const generateRandomPassword = () => {
+    const length = 10;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Log the salesRepDetails to check the data
-      console.log("Sending sales rep details:", salesRepDetails);
-
-      // Send the data to the backend via API
+      // Generate password if manual notification is selected
+      let generatedPassword = null;
+      if (salesRepDetails.notificationMethod === "manual") {
+        generatedPassword = generateRandomPassword();
+        alert(`Manual credentials created:\n\nUsername: ${salesRepDetails.username}\nPassword: ${generatedPassword}`);
+      }
+  
       const response = await axios.post(
-        "http://localhost:5000/api/sales-rep", // Backend API endpoint
-        salesRepDetails, // Send the salesRepDetails as the body of the request
+        "http://localhost:5000/api/sales-rep",
+        {
+          ...salesRepDetails,
+          generatedPassword
+        },
         {
           headers: {
             "Content-Type": "application/json",
           },
         }
       );
-
-      console.log("Response from API:", response.data);
-
-      // Handle success (redirect or show success message)
+  
       if (response.data.success) {
         alert("Sales Rep added successfully!");
+        // Reset form
+        setSalesRepDetails({
+          name: "",
+          username: "",
+          store: "",
+          description: "",
+          email: "",
+          phone: "",
+          remarks: "",
+          notificationMethod: "",
+        });
       } else {
-        alert("Failed to add Sales Rep.");
+        alert(response.data.message || "Failed to add Sales Rep.");
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("An error occurred. Please try again.");
+      
+      // Enhanced error handling
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        console.log("Error data:", error.response.data);
+        console.log("Error status:", error.response.status);
+        console.log("Error headers:", error.response.headers);
+        
+        if (error.response.status === 400) {
+          alert(`Validation Error: ${error.response.data.message || 'Invalid data submitted'}`);
+        } else if (error.response.status === 500) {
+          alert('Server Error: Please try again later');
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.log("Error request:", error.request);
+        alert('Network Error: Please check your connection');
+      } else {
+        // Something happened in setting up the request
+        console.log('Error message:', error.message);
+        alert('Application Error: ' + error.message);
+      }
     }
   };
 

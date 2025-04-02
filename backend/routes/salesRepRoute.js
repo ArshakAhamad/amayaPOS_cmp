@@ -1,5 +1,7 @@
 import express from 'express';
 import pool from '../config/db.js'; // MySQL connection pool
+import bcrypt from 'bcrypt';
+
 
 const router = express.Router();
 
@@ -14,33 +16,99 @@ router.post('/sales-rep', async (req, res) => {
     phone,
     remarks,
     notificationMethod,
+    generatedPassword
   } = req.body;
 
-  try {
-    // Check if username already exists
-    console.log("Checking if username exists:", username);
-    const [existingUser] = await pool.execute('SELECT * FROM sales_rep WHERE user_name = ?', [username]);
-    console.log("Existing user check:", existingUser);
+  // Basic validation
+  if (!name || !username || !store || !email || !phone || !notificationMethod) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing required fields'
+    });
+  }
 
-    if (existingUser.length > 0) {
-      return res.status(400).json({ success: false, message: 'Username already exists' });
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // Check if username exists
+    const [salesRepCheck] = await connection.query(
+      'SELECT 1 FROM sales_rep WHERE user_name = ? LIMIT 1', 
+      [username]
+    );
+    
+    const [systemUserCheck] = await connection.query(
+      'SELECT 1 FROM system_user WHERE username = ? LIMIT 1',
+      [username]
+    );
+
+    if (salesRepCheck.length > 0 || systemUserCheck.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Username already exists'
+      });
     }
 
-    // Insert the new sales rep into the database
-    console.log('Inserting sales rep into the database:', { name, username, store, description, email });
-    const [result] = await pool.execute(
-      'INSERT INTO sales_rep (salesrep_name, user_name, store, description, email, phone, remarks, notification_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    // Insert sales rep
+    const [salesRepResult] = await connection.query(
+      `INSERT INTO sales_rep 
+      (salesrep_name, user_name, store, description, email, phone, remarks, notification_method) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [name, username, store, description, email, phone, remarks, notificationMethod]
     );
-    console.log("Sales rep added successfully:", result);
 
-    res.json({ success: true, message: 'Sales Rep created successfully', data: result });
+    // If manual notification, create system user with hashed password
+    if (notificationMethod.toLowerCase() === "manual" && generatedPassword) {
+      try {
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(generatedPassword, saltRounds);
+        
+        await connection.query(
+          `INSERT INTO system_user 
+          (username, email, password, role) 
+          VALUES (?, ?, ?, ?)`,
+          [username, email, hashedPassword, 'Cashier']
+        );
+      } catch (hashError) {
+        console.error('Password hashing error:', hashError);
+        await connection.rollback();
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to hash password'
+        });
+      }
+    }
+
+    await connection.commit();
+    
+    return res.json({
+      success: true,
+      message: 'Sales Rep created successfully',
+      data: {
+        salesRepId: salesRepResult.insertId
+      }
+    });
+
   } catch (err) {
-    console.error('Error during sales rep insertion:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Database error:', err);
+    
+    if (connection) {
+      await connection.rollback();
+    }
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Database operation failed',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
-
 
 // Sales Rep List route
 router.get('/sales-reps', async (req, res) => {
