@@ -5,25 +5,25 @@ const router = express.Router();
 
 // POST /api/store-types - Create a new store type
 router.post('/store-types', async (req, res) => {
-  const { type, description } = req.body;
-  const createdBy = req.user?.id || 'system'; // Assuming you have user authentication
+  const { storeTypeName, description } = req.body; // Changed from 'type' to 'storeTypeName'
+  const createdBy = req.user?.id || 'system';
 
-  if (!type) {
-    return res.status(400).json({ success: false, message: 'Store type is required.' });
+  if (!storeTypeName) { // Changed validation from 'type' to 'storeTypeName'
+    return res.status(400).json({ success: false, message: 'Store type name is required.' });
   }
 
   try {
     const [result] = await pool.execute(
       `INSERT INTO store_types (type, description, created_by) 
        VALUES (?, ?, ?)`,
-      [type, description, createdBy]
+      [storeTypeName, description, createdBy] // Using storeTypeName for the type field
     );
 
     if (result.affectedRows > 0) {
       const [newStoreType] = await pool.execute(
         `SELECT 
           id,
-          type,
+          type as storeTypeName, // Aliasing to match frontend
           description,
           DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdDate,
           created_by as createdBy,
@@ -49,13 +49,12 @@ router.post('/store-types', async (req, res) => {
   }
 });
 
-// GET /api/store-types - Fetch store types with pagination and search
+// GET /api/store-types - Fetch store types
 router.get('/store-types', async (req, res) => {
   const { page = 1, limit = 10, search = '' } = req.query;
   const offset = (page - 1) * limit;
 
   try {
-    // Get total count for pagination
     const [countResult] = await pool.execute(
       `SELECT COUNT(*) as totalCount FROM store_types 
        WHERE type LIKE ? OR description LIKE ?`,
@@ -64,7 +63,6 @@ router.get('/store-types', async (req, res) => {
     
     const totalCount = countResult[0].totalCount;
 
-    // Get paginated results
     const [storeTypes] = await pool.execute(
       `SELECT 
         id,
@@ -143,7 +141,7 @@ router.put('/store-types/:id', async (req, res) => {
   }
 });
 
-// PUT /api/store-types/:id/toggle-status - Toggle store type status
+// PUT /api/store-types/:id/toggle-status - Toggle status
 router.put('/store-types/:id/toggle-status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -185,7 +183,6 @@ router.delete('/store-types/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    // First check if the store type exists
     const [checkResult] = await pool.execute(
       `SELECT id FROM store_types WHERE id = ?`,
       [id]
@@ -195,7 +192,6 @@ router.delete('/store-types/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Store type not found.' });
     }
 
-    // Then delete it
     const [result] = await pool.execute(
       `DELETE FROM store_types WHERE id = ?`,
       [id]
@@ -211,15 +207,12 @@ router.delete('/store-types/:id', async (req, res) => {
     }
   } catch (err) {
     console.error('Error deleting store type:', err);
-    
-    // Handle foreign key constraint errors
     if (err.code === 'ER_ROW_IS_REFERENCED_2') {
       return res.status(409).json({ 
         success: false, 
         message: 'Cannot delete store type as it is being used by stores.' 
       });
     }
-    
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 });

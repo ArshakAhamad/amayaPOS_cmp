@@ -66,7 +66,7 @@ app.use('/api/', productRoutes);
 app.use('/api/', categoryRoutes);
 app.use('/api/', SupplierRoutes);
 app.use('/api/', StoreRoutes);
-app.use('/api/', storeTypeRoutes);
+app.use('/api', storeTypeRoutes);
 app.use('/api/', POSRoutes);
 app.use('/api/', purchaseRoutes);
 app.use('/api/product_returns', productReturnRoutes);
