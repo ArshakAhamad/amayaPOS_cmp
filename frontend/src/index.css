@@ -716,6 +716,7 @@ button:hover {
 .cashier-card {
   background-color: #ffffff;
   padding: 20px;
+  width: 250px;
   border-radius: 8px;
   border: 1px solid #e5e5e5;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);

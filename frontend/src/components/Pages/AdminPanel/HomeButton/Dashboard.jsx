@@ -177,8 +177,8 @@ const Dashboard = () => {
 
       {/* Cashier Summary Section */}
       <div className="cashier-summary mt-6">
-        <h3 className="text-lg font-medium mb-4">Cashier Performance</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  
+        <div className="cashier-summary mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading.cashiers ? (
             Array(3).fill(0).map((_, index) => (
               <div key={index} className="p-4 border border-gray-200 rounded-lg shadow-md">
@@ -200,13 +200,13 @@ const Dashboard = () => {
                 <p className="mb-1">Cash: <span className="font-semibold">LKR {cashier.cash.toFixed(2)}</span></p>
                 <p>Vouchers: <span className="font-semibold">LKR {cashier.voucher.toFixed(2)}</span></p>
               </div>
-            ))
+            )) 
           ) : (
             <div className="col-span-full text-center py-8">
               <p className="text-gray-500">No cashier data available</p>
             </div>
           )}
-        </div>
+        </div> <br></br>
       </div>
     </div>
   );
