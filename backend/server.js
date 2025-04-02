@@ -26,6 +26,7 @@ import cashRoutes from './routes/cashRoute.js';
 import salesProfitRoutes from './routes/salesProfitRoute.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import purchaseBillsRoutes from './routes/purchaseBillsRoute.js';
+import authRoutes from './routes/authRoute.js';
 
 dotenv.config();
 
@@ -75,6 +76,7 @@ app.use('/api/sales', salesProfitRoutes);
 app.use('/api/cashiers', cashRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/purchase-bills', purchaseBillsRoutes);
+app.use('/api/auth', authRoutes);
 // Catch unmatched routes
 app.use((req, res) => {
   res.status(404).json({ error: 'API route not found' });
