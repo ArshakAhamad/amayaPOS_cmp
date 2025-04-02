@@ -98,4 +98,97 @@ router.post('/suppliers/:id/toggle-status', async (req, res) => {
   }
 });
 
+// GET /api/suppliers/bills - Get supplier bills
+router.get('/suppliers/bills', async (req, res) => {
+  try {
+    const [bills] = await pool.execute(`
+      SELECT 
+        s.id as supplier_id,
+        s.supplier_name,
+        sb.bill_no,
+        sb.outstanding_amount,
+        sb.settlement_date,
+        sb.settled_amount,
+        u.username as approved_by
+      FROM supplier_bill_settlements sb
+      JOIN suppliers s ON sb.supplier_id = s.id
+      JOIN system_user u ON sb.approved_by = u.id
+      ORDER BY sb.settlement_date DESC
+    `);
+
+    res.status(200).json({ 
+      success: true, 
+      bills 
+    });
+  } catch (err) {
+    console.error('Error fetching supplier bills:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error', 
+      error: err.message 
+    });
+  }
+});
+
+// POST /api/suppliers/settle - Settle a supplier bill
+router.post('/suppliers/settle', async (req, res) => {
+  const { billNo, supplierId, outstandingAmount, approvalPassword } = req.body;
+  
+  // Input validation
+  if (!billNo || !supplierId || !outstandingAmount) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Missing required fields' 
+    });
+  }
+
+  // Check password (simple validation - in production use proper auth)
+  if (approvalPassword !== "admin123") {
+    return res.status(403).json({ 
+      success: false, 
+      message: 'Invalid approval password' 
+    });
+  }
+
+  try {
+    // Start transaction
+    await pool.query('START TRANSACTION');
+
+    // 1. Record the settlement
+    const [result] = await pool.execute(
+      `INSERT INTO supplier_bill_settlements 
+       (supplier_id, bill_no, outstanding_amount, settled_amount, settlement_date, approved_by, approval_method)
+       VALUES (?, ?, ?, ?, CURDATE(), 1, 'password')`,
+      [supplierId, billNo, outstandingAmount, outstandingAmount]
+    );
+
+    // 2. Update supplier's outstanding balance
+    await pool.execute(
+      `UPDATE suppliers 
+       SET outstanding = outstanding - ?
+       WHERE id = ?`,
+      [outstandingAmount, supplierId]
+    );
+
+    // Commit transaction
+    await pool.query('COMMIT');
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Bill settled successfully',
+      settlementId: result.insertId
+    });
+
+  } catch (err) {
+    // Rollback on error
+    await pool.query('ROLLBACK');
+    console.error('Error settling supplier bill:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error', 
+      error: err.message 
+    });
+  }
+});
+
 export default router;
