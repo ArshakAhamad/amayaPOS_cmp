@@ -4,11 +4,14 @@ import { Printer } from 'lucide-react';
 const POSReceipts = () => {
   const [receipts, setReceipts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Fetch payment data from the API
   useEffect(() => {
     const fetchPayments = async () => {
       try {
+        setLoading(true);
         const response = await fetch('http://localhost:5000/api/payments');
         if (!response.ok) {
           throw new Error('Failed to fetch payments');
@@ -17,6 +20,9 @@ const POSReceipts = () => {
         setReceipts(data);
       } catch (error) {
         console.error('Error fetching payments:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -34,6 +40,48 @@ const POSReceipts = () => {
     );
   });
 
+  // Handle cancel receipt
+  const handleCancelReceipt = async (receiptId) => {
+    if (!window.confirm('Are you sure you want to cancel this receipt?')) {
+      return;
+    }
+  
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`http://localhost:5000/api/payments/${receiptId}/cancel`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to cancel receipt');
+      }
+  
+      // Update local state
+      setReceipts(prevReceipts =>
+        prevReceipts.map(receipt =>
+          receipt.id === receiptId ? { ...receipt, status: 'Inactive' } : receipt
+        )
+      );
+      
+      // Show success message
+      alert('Receipt cancelled successfully');
+      
+    } catch (error) {
+      console.error('Error cancelling receipt:', error);
+      alert(error.message || 'Failed to cancel receipt');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const handleExport = (type) => {
     if (filteredReceipts.length === 0) {
       alert('No data to export');
@@ -64,56 +112,6 @@ const POSReceipts = () => {
     downloadFile(content, filename, type === 'JSON' ? 'application/json' : 'text/plain');
   };
 
-  const convertToCSV = (data) => {
-    if (data.length === 0) return '';
-    const headers = Object.keys(data[0]).join(',');
-    const rows = data.map(obj => 
-      Object.values(obj).map(value => {
-        if (value === null || value === undefined) return '';
-        const val = typeof value === 'object' ? JSON.stringify(value) : value.toString();
-        return typeof val === 'string' ? `"${val.replace(/"/g, '""')}"` : val;
-      }).join(',')
-    );
-    return [headers, ...rows].join('\n');
-  };
-
-  const convertToSQL = (data) => {
-    if (data.length === 0) return '';
-    const tableName = 'receipts';
-    const columns = Object.keys(data[0]).join(', ');
-    const values = data.map(obj => 
-      `(${Object.values(obj).map(value => {
-        if (value === null || value === undefined) return 'NULL';
-        const val = typeof value === 'object' ? JSON.stringify(value) : value.toString();
-        return typeof val === 'string' ? `'${val.replace(/'/g, "''")}'` : val;
-      }).join(', ')})`
-    ).join(',\n');
-    
-    return `INSERT INTO ${tableName} (${columns}) VALUES\n${values};`;
-  };
-
-  const convertToTXT = (data) => {
-    return data.map(obj => 
-      Object.entries(obj).map(([key, value]) => {
-        const val = value === null || value === undefined ? 'N/A' : 
-                   typeof value === 'object' ? JSON.stringify(value) : value.toString();
-        return `${key}: ${val}`;
-      }).join('\n')
-    ).join('\n\n');
-  };
-
-  const downloadFile = (content, filename, mimeType) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const handlePrintReceipt = (receiptId) => {
     const receiptToPrint = receipts.find(r => r.id === receiptId);
     if (!receiptToPrint) return;
@@ -130,6 +128,7 @@ const POSReceipts = () => {
             .divider { border-top: 1px dashed #000; margin: 15px 0; }
             .row { display: flex; justify-content: space-between; margin: 5px 0; }
             .footer { margin-top: 20px; text-align: center; font-size: 0.8em; }
+            .status-inactive { color: red; font-weight: bold; }
           </style>
         </head>
         <body>
@@ -166,6 +165,11 @@ const POSReceipts = () => {
               <span>Total:</span>
               <span>${(receiptToPrint.cash + receiptToPrint.card)?.toLocaleString()}</span>
             </div>
+            ${receiptToPrint.status === 'Inactive' ? 
+              `<div class="row status-inactive">
+                <span>Status:</span>
+                <span>CANCELLED</span>
+              </div>` : ''}
             <div class="footer">
               <p>Thank you for your purchase!</p>
               <p>${new Date().toLocaleDateString()}</p>
@@ -184,6 +188,14 @@ const POSReceipts = () => {
     `);
     printWindow.document.close();
   };
+
+  if (loading) {
+    return <div className="main-content p-6">Loading receipts...</div>;
+  }
+
+  if (error) {
+    return <div className="main-content p-6 text-red-500">Error: {error}</div>;
+  }
 
   return (
     <div className="main-content p-6">
@@ -228,16 +240,20 @@ const POSReceipts = () => {
                   <td className="px-4 py-3 font-bold">{receipt.cash?.toLocaleString() || '0'}</td>
                   <td className="px-4 py-3">{receipt.card?.toLocaleString() || '0'}</td>
                   <td className="px-4 py-3">{receipt.created_by}</td>
-                  <td className={`px-4 py-3 font-semibold ${receipt.status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
+                  <td className={`px-4 py-3 font-semibold ${
+                    receipt.status === 'Active' ? 'text-green-600' : 'text-red-600'
+                  }`}>
                     {receipt.status}
                   </td>
                   <td className="px-4 py-3 flex items-center">
-                    <button 
-                      className="text-red-600 hover:text-red-800 font-semibold mr-3"
-                      onClick={() => console.log('Cancel receipt:', receipt.id)}
-                    >
-                      Cancel
-                    </button>
+                    {receipt.status === 'Active' && (
+                      <button 
+                        className="text-red-600 hover:text-red-800 font-semibold mr-3"
+                        onClick={() => handleCancelReceipt(receipt.id)}
+                      >
+                        Cancel
+                      </button>
+                    )}
                     <button
                       className="text-blue-600 hover:text-blue-800"
                       onClick={() => handlePrintReceipt(receipt.id)}
@@ -260,18 +276,6 @@ const POSReceipts = () => {
               className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors"
             >
               Export {type}
-            </button>
-          ))}
-        </div>
-
-        {/* Pagination */}
-        <div className="pagination-container flex justify-center mt-6">
-          {[1, 2, 3, 4, 5, '...', Math.ceil(filteredReceipts.length / 10)].map((num, idx) => (
-            <button 
-              key={idx} 
-              className={`pagination-button ${num === 1 ? 'bg-blue-600' : 'bg-gray-800'} text-white px-4 py-2 rounded mx-1 hover:bg-opacity-90`}
-            >
-              {num}
             </button>
           ))}
         </div>

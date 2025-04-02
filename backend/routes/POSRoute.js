@@ -1,5 +1,5 @@
 import express from 'express';
-import pool from '../config/db.js'; // Import your database pool
+import pool from '../config/db.js'; 
 
 const router = express.Router();
 
@@ -254,6 +254,52 @@ router.post('/returns', async (req, res) => {
       res.status(500).json({ success: false, message: 'Server error', error: err.message });
     }
   });
+
+// GET /api/receipt/:id - Fetch a specific receipt by ID
+router.put('/payments/:id/cancel', async (req, res) => {
+  try {
+      const { id } = req.params;
+      
+      // First verify the receipt exists
+      const [receipt] = await pool.execute(
+          'SELECT id FROM payments WHERE id = ?',
+          [id]
+      );
+
+      if (receipt.length === 0) {
+          return res.status(404).json({ 
+              success: false, 
+              message: 'Receipt not found' 
+          });
+      }
+
+      // Update status to Inactive
+      const [result] = await pool.execute(
+          'UPDATE payments SET status = "Inactive" WHERE id = ?',
+          [id]
+      );
+
+      if (result.affectedRows === 0) {
+          return res.status(400).json({ 
+              success: false, 
+              message: 'Receipt could not be cancelled' 
+          });
+      }
+
+      res.json({ 
+          success: true, 
+          message: 'Receipt cancelled successfully' 
+      });
+  } catch (error) {
+      console.error('Error cancelling receipt:', error);
+      res.status(500).json({ 
+          success: false, 
+          message: 'Server error while cancelling receipt',
+          error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+  }
+});
+
 //------------------------------------------------POS Reorders-----------------------------------------------------------------------------------------------------//
 // GET /api/reorders - Fetch reorder products with sale quantity for the last 30 days
 router.get('/reorders', async (req, res) => {
