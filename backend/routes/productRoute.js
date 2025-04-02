@@ -1,14 +1,14 @@
-import express from 'express';
-import pool from '../config/db.js'; // Import your database pool
-import multer from 'multer'; // Import multer for file uploads
-import path from 'path';
+import express from "express";
+import pool from "../config/db.js"; // Import your database pool
+import multer from "multer"; // Import multer for file uploads
+import path from "path";
 
 const router = express.Router();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Save files in the 'uploads' folder
+    cb(null, "uploads/"); // Save files in the 'uploads' folder
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // POST /api/products - Create a new product with file upload
-router.post('/products', upload.single('file'), async (req, res) => {
+router.post("/products", upload.single("file"), async (req, res) => {
   const {
     productName,
     barcode,
@@ -41,7 +41,9 @@ router.post('/products', upload.single('file'), async (req, res) => {
     !price ||
     !minQuantity
   ) {
-    return res.status(400).json({ success: false, message: 'All fields are required.' });
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required." });
   }
 
   try {
@@ -68,22 +70,28 @@ router.post('/products', upload.single('file'), async (req, res) => {
         minQuantity,
         giftVoucher || false, // Default to false if giftVoucher is not provided
         filePath, // Save the file path in the database
-      ]
+      ],
     );
 
     if (result.affectedRows > 0) {
-      res.status(201).json({ success: true, message: 'Product created successfully.' });
+      res
+        .status(201)
+        .json({ success: true, message: "Product created successfully." });
     } else {
-      res.status(500).json({ success: false, message: 'Failed to create product.' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to create product." });
     }
   } catch (err) {
-    console.error('Error creating product:', err); // Log the error
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    console.error("Error creating product:", err); // Log the error
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 });
 
 // GET /api/products - Fetch all products
-router.get('/products', async (req, res) => {
+router.get("/products", async (req, res) => {
   try {
     const [products] = await pool.execute(`
       SELECT 
@@ -106,7 +114,9 @@ router.get('/products', async (req, res) => {
     `);
 
     if (products.length === 0) {
-      return res.status(404).json({ success: false, message: 'No products found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: "No products found." });
     }
 
     // Parse numeric fields as numbers
@@ -123,14 +133,13 @@ router.get('/products', async (req, res) => {
       products: parsedProducts,
     });
   } catch (err) {
-    console.error('Error fetching products:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Error fetching products:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-
 // Get all active products
-router.get('/active', async (req, res) => {
+router.get("/active", async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT 
@@ -143,22 +152,22 @@ router.get('/active', async (req, res) => {
       WHERE status = 'Active'
       ORDER BY product_name ASC
     `);
-    res.json({ 
-      success: true, 
-      products: rows 
+    res.json({
+      success: true,
+      products: rows,
     });
   } catch (err) {
-    console.error('Error fetching active products:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error',
-      error: err.message 
+    console.error("Error fetching active products:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
     });
   }
 });
 
 // Route to update product details
-router.put('/products/:id', async (req, res) => {
+router.put("/products/:id", async (req, res) => {
   const { id } = req.params;
   const {
     product_name,
@@ -168,18 +177,20 @@ router.put('/products/:id', async (req, res) => {
     discount,
     last_cost,
     avg_cost,
-    status
+    status,
   } = req.body;
 
   try {
     // Check if product exists
     const [existingProduct] = await pool.execute(
-      'SELECT * FROM products WHERE id = ?', 
-      [id]
+      "SELECT * FROM products WHERE id = ?",
+      [id],
     );
-    
+
     if (existingProduct.length === 0) {
-      return res.status(404).json({ success: false, message: 'Product not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
     // Update the product in the database
@@ -203,32 +214,32 @@ router.put('/products/:id', async (req, res) => {
         last_cost,
         avg_cost,
         status,
-        id
-      ]
+        id,
+      ],
     );
 
     if (result.affectedRows > 0) {
       // Fetch the updated record
       const [updatedProduct] = await pool.execute(
-        'SELECT * FROM products WHERE id = ?', 
-        [id]
+        "SELECT * FROM products WHERE id = ?",
+        [id],
       );
-      return res.json({ 
-        success: true, 
-        message: 'Product updated successfully', 
-        data: updatedProduct[0] 
+      return res.json({
+        success: true,
+        message: "Product updated successfully",
+        data: updatedProduct[0],
       });
     } else {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Failed to update product' 
+      return res.status(400).json({
+        success: false,
+        message: "Failed to update product",
       });
     }
   } catch (err) {
-    console.error('Error updating product:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error' 
+    console.error("Error updating product:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
     });
   }
 });

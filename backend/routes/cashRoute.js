@@ -1,11 +1,11 @@
-import express from 'express';
-import pool from '../config/db.js';
-import authenticateToken from '../middlewares/authenticateToken.js'; 
+import express from "express";
+import pool from "../config/db.js";
+import authenticateToken from "../middlewares/authenticateToken.js";
 
 const router = express.Router();
 
 // GET Cashier Summary Data
-router.get('/summary', authenticateToken, async (req, res) => {
+router.get("/summary", authenticateToken, async (req, res) => {
   try {
     const { date, cashier_id } = req.query;
 
@@ -13,7 +13,7 @@ router.get('/summary', authenticateToken, async (req, res) => {
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid date format. Use YYYY-MM-DD'
+        message: "Invalid date format. Use YYYY-MM-DD",
       });
     }
 
@@ -33,13 +33,13 @@ router.get('/summary', authenticateToken, async (req, res) => {
     `;
 
     const params = [];
-    
+
     // Add filters if provided
     if (date) {
       query += ` AND DATE(ss.date) = ?`;
       params.push(date);
     }
-    
+
     if (cashier_id) {
       query += ` AND u.id = ?`;
       params.push(cashier_id);
@@ -50,7 +50,7 @@ router.get('/summary', authenticateToken, async (req, res) => {
     const [cashierData] = await pool.query(query, params);
 
     // Safely format numbers to 2 decimal places
-    const formattedData = cashierData.map(item => {
+    const formattedData = cashierData.map((item) => {
       // Convert all numeric fields to proper numbers first
       const safeSale = Number(item.sale) || 0;
       const safeCash = Number(item.cash) || 0;
@@ -62,113 +62,119 @@ router.get('/summary', authenticateToken, async (req, res) => {
         sale: Number(safeSale.toFixed(2)),
         cash: Number(safeCash.toFixed(2)),
         card: Number(safeCard.toFixed(2)),
-        voucher: Number(safeVoucher.toFixed(2))
+        voucher: Number(safeVoucher.toFixed(2)),
       };
     });
 
     res.json({
       success: true,
       data: formattedData,
-      message: formattedData.length > 0 
-        ? 'Data retrieved successfully' 
-        : 'No data available for the selected criteria'
+      message:
+        formattedData.length > 0
+          ? "Data retrieved successfully"
+          : "No data available for the selected criteria",
     });
-
   } catch (error) {
-    console.error('Detailed database error:', {
+    console.error("Detailed database error:", {
       message: error.message,
       stack: error.stack,
       query: query,
-      params: params
+      params: params,
     });
-    
+
     res.status(500).json({
       success: false,
-      message: 'Failed to process cashier data',
-      error: process.env.NODE_ENV === 'development' 
-        ? error.message 
-        : 'Internal server error'
+      message: "Failed to process cashier data",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 });
 
-
 // GET All Cashiers
-router.get('/', authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const [cashiers] = await pool.query(
-      "SELECT id, username, email, created_at FROM system_user WHERE role = 'Cashier'"
+      "SELECT id, username, email, created_at FROM system_user WHERE role = 'Cashier'",
     );
-    
+
     res.json({
       success: true,
-      data: cashiers
+      data: cashiers,
     });
   } catch (error) {
-    console.error('Error fetching cashiers:', error);
+    console.error("Error fetching cashiers:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch cashiers'
+      message: "Failed to fetch cashiers",
     });
   }
 });
 
 // GET Cashier Details by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get("/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const [cashier] = await pool.query(
       `SELECT id, username, email, created_at 
        FROM system_user 
        WHERE id = ? AND role = 'Cashier'`,
-      [id]
+      [id],
     );
-    
+
     if (cashier.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Cashier not found'
+        message: "Cashier not found",
       });
     }
-    
+
     res.json({
       success: true,
-      data: cashier[0]
+      data: cashier[0],
     });
   } catch (error) {
-    console.error('Error fetching cashier details:', error);
+    console.error("Error fetching cashier details:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch cashier details'
+      message: "Failed to fetch cashier details",
     });
   }
 });
 
 // POST Create Cashier Summary Record
-router.post('/summary', authenticateToken, async (req, res) => {
+router.post("/summary", authenticateToken, async (req, res) => {
   try {
     const { cashier_id, date, sale, cash, card, voucher } = req.body;
 
     // Validate required fields
-    if (!cashier_id || !date || sale === undefined || cash === undefined || 
-        card === undefined || voucher === undefined) {
+    if (
+      !cashier_id ||
+      !date ||
+      sale === undefined ||
+      cash === undefined ||
+      card === undefined ||
+      voucher === undefined
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields'
+        message: "Missing required fields",
       });
     }
 
     // Check if cashier exists
     const [cashier] = await pool.query(
       'SELECT id FROM system_user WHERE id = ? AND role = "Cashier"',
-      [cashier_id]
+      [cashier_id],
     );
-    
+
     if (cashier.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Cashier not found'
+        message: "Cashier not found",
       });
     }
 
@@ -182,35 +188,35 @@ router.post('/summary', authenticateToken, async (req, res) => {
        cash = VALUES(cash),
        card = VALUES(card),
        voucher = VALUES(voucher)`,
-      [cashier_id, date, sale, cash, card, voucher]
+      [cashier_id, date, sale, cash, card, voucher],
     );
 
     res.status(201).json({
       success: true,
-      message: 'Cashier summary record saved successfully',
+      message: "Cashier summary record saved successfully",
       data: {
-        id: result.insertId
-      }
+        id: result.insertId,
+      },
     });
   } catch (error) {
-    console.error('Error saving cashier summary:', error);
+    console.error("Error saving cashier summary:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to save cashier summary',
-      error: error.message
+      message: "Failed to save cashier summary",
+      error: error.message,
     });
   }
 });
 
 // GET Cashier Daily Performance (with optional date range)
-router.get('/performance', authenticateToken, async (req, res) => {
+router.get("/performance", authenticateToken, async (req, res) => {
   try {
     const { cashier_id, start_date, end_date } = req.query;
 
     if (!cashier_id) {
       return res.status(400).json({
         success: false,
-        message: 'cashier_id is required'
+        message: "cashier_id is required",
       });
     }
 
@@ -243,30 +249,29 @@ router.get('/performance', authenticateToken, async (req, res) => {
     const [performanceData] = await pool.query(query, params);
 
     // Format numbers
-    const formattedData = performanceData.map(item => ({
+    const formattedData = performanceData.map((item) => ({
       ...item,
       total_sales: Number(item.total_sales.toFixed(2)),
       total_cash: Number(item.total_cash.toFixed(2)),
       total_card: Number(item.total_card.toFixed(2)),
-      total_voucher: Number(item.total_voucher.toFixed(2))
+      total_voucher: Number(item.total_voucher.toFixed(2)),
     }));
 
     res.json({
       success: true,
-      data: formattedData
+      data: formattedData,
     });
-
   } catch (error) {
-    console.error('Error fetching cashier performance:', error);
+    console.error("Error fetching cashier performance:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch cashier performance data'
+      message: "Failed to fetch cashier performance data",
     });
   }
 });
 
 // GET Cashier's Recent Transactions
-router.get('/:id/transactions', authenticateToken, async (req, res) => {
+router.get("/:id/transactions", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { limit = 10 } = req.query;
@@ -274,13 +279,13 @@ router.get('/:id/transactions', authenticateToken, async (req, res) => {
     // Validate cashier exists
     const [cashier] = await pool.query(
       'SELECT id FROM system_user WHERE id = ? AND role = "Cashier"',
-      [id]
+      [id],
     );
-    
+
     if (cashier.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Cashier not found'
+        message: "Cashier not found",
       });
     }
 
@@ -298,18 +303,18 @@ router.get('/:id/transactions', authenticateToken, async (req, res) => {
       GROUP BY p.id
       ORDER BY p.created_at DESC
       LIMIT ?`,
-      [id, parseInt(limit)]
+      [id, parseInt(limit)],
     );
 
     res.json({
       success: true,
-      data: transactions
+      data: transactions,
     });
   } catch (error) {
-    console.error('Error fetching cashier transactions:', error);
+    console.error("Error fetching cashier transactions:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch cashier transactions'
+      message: "Failed to fetch cashier transactions",
     });
   }
 });

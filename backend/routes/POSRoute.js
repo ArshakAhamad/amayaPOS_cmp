@@ -1,15 +1,20 @@
-import express from 'express';
-import pool from '../config/db.js'; 
+import express from "express";
+import pool from "../config/db.js";
 
 const router = express.Router();
 
 // POST /api/cart - Add a product to the cart
-router.post('/cart', async (req, res) => {
+router.post("/cart", async (req, res) => {
   const { productId, quantity, status } = req.body;
 
   // Validate required fields
   if (!productId || !quantity || !status) {
-    return res.status(400).json({ success: false, message: 'Product ID, quantity, and status are required.' });
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "Product ID, quantity, and status are required.",
+      });
   }
 
   try {
@@ -21,11 +26,13 @@ router.post('/cart', async (req, res) => {
         price 
       FROM products 
       WHERE id = ?`,
-      [productId]
+      [productId],
     );
 
     if (product.length === 0) {
-      return res.status(404).json({ success: false, message: 'Product not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found." });
     }
 
     const { product_name, price } = product[0];
@@ -39,54 +46,69 @@ router.post('/cart', async (req, res) => {
         quantity, 
         status
       ) VALUES (?, ?, ?, ?, ?)`,
-      [productId, product_name, price, quantity, status]
+      [productId, product_name, price, quantity, status],
     );
 
     if (result.affectedRows > 0) {
-      res.status(201).json({ success: true, message: 'Product added to cart successfully.' });
+      res
+        .status(201)
+        .json({
+          success: true,
+          message: "Product added to cart successfully.",
+        });
     } else {
-      res.status(500).json({ success: false, message: 'Failed to add product to cart.' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to add product to cart." });
     }
   } catch (err) {
-    console.error('Error adding product to cart:', err);
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    console.error("Error adding product to cart:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 });
 
 // PUT /api/cart/:id - Update the quantity of a product in the cart
-router.put('/cart/:id', async (req, res) => {
-    const { id } = req.params; // Cart item ID
-    const { quantity } = req.body;
-  
-    // Validate required fields
-    if (!quantity) {
-      return res.status(400).json({ success: false, message: 'Quantity is required.' });
-    }
-  
-    try {
-      // Update the quantity in the cart table
-      const [result] = await pool.execute(
-        `UPDATE cart 
+router.put("/cart/:id", async (req, res) => {
+  const { id } = req.params; // Cart item ID
+  const { quantity } = req.body;
+
+  // Validate required fields
+  if (!quantity) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Quantity is required." });
+  }
+
+  try {
+    // Update the quantity in the cart table
+    const [result] = await pool.execute(
+      `UPDATE cart 
         SET quantity = ? 
         WHERE id = ?`,
-        [quantity, id]
-      );
-  
-      if (result.affectedRows > 0) {
-        res.status(200).json({ success: true, message: 'Cart item updated successfully.' });
-      } else {
-        res.status(404).json({ success: false, message: 'Cart item not found.' });
-      }
-    } catch (err) {
-      console.error('Error updating cart item:', err);
-      res.status(500).json({ success: false, message: 'Server error', error: err.message });
+      [quantity, id],
+    );
+
+    if (result.affectedRows > 0) {
+      res
+        .status(200)
+        .json({ success: true, message: "Cart item updated successfully." });
+    } else {
+      res.status(404).json({ success: false, message: "Cart item not found." });
     }
-  });
+  } catch (err) {
+    console.error("Error updating cart item:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+});
 
 // GET /api/cart - Fetch all items in the cart
-router.get('/cart', async (req, res) => {
-    try {
-      const [cartItems] = await pool.execute(`
+router.get("/cart", async (req, res) => {
+  try {
+    const [cartItems] = await pool.execute(`
         SELECT 
           id,
           product_id,
@@ -96,35 +118,37 @@ router.get('/cart', async (req, res) => {
           status
         FROM cart
       `);
-  
-      if (cartItems.length === 0) {
-        return res.status(404).json({ success: false, message: 'No items in the cart.' });
-      }
-  
-      // Calculate the total for each item
-      const parsedCartItems = cartItems.map((item) => ({
-        ...item,
-        total: item.price * item.quantity,
-      }));
-  
-      res.status(200).json({
-        success: true,
-        cart: parsedCartItems,
-      });
-    } catch (err) {
-      console.error('Error fetching cart items:', err);
-      res.status(500).json({ success: false, message: 'Server error' });
+
+    if (cartItems.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No items in the cart." });
     }
-  });
+
+    // Calculate the total for each item
+    const parsedCartItems = cartItems.map((item) => ({
+      ...item,
+      total: item.price * item.quantity,
+    }));
+
+    res.status(200).json({
+      success: true,
+      cart: parsedCartItems,
+    });
+  } catch (err) {
+    console.error("Error fetching cart items:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 
 // POST /api/payment - Process payment for the cart
-router.post('/payment', async (req, res) => {
+router.post("/payment", async (req, res) => {
   const {
     paymentMethod,
     totalAmount,
     cartItems,
-    customer = 'Walk-In-Customer', // Default value
-    phone = '+94757110053', // Default value
+    customer = "Walk-In-Customer", // Default value
+    phone = "+94757110053", // Default value
     receiptNumber = 2865, // Default value
     cash = totalAmount, // Default value (use totalAmount if not provided)
     card = 0, // Default value
@@ -132,7 +156,12 @@ router.post('/payment', async (req, res) => {
 
   // Validate required fields
   if (!paymentMethod || !totalAmount || !cartItems || cartItems.length === 0) {
-    return res.status(400).json({ success: false, message: 'Payment method, total amount, and cart items are required.' });
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "Payment method, total amount, and cart items are required.",
+      });
   }
 
   let connection;
@@ -156,7 +185,17 @@ router.post('/payment', async (req, res) => {
         created_by,
         status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [paymentMethod, totalAmount, customer, phone, receiptNumber, cash, card, 'Admin', 'Active'] // Default values for created_by and status
+      [
+        paymentMethod,
+        totalAmount,
+        customer,
+        phone,
+        receiptNumber,
+        cash,
+        card,
+        "Admin",
+        "Active",
+      ], // Default values for created_by and status
     );
 
     if (paymentResult.affectedRows > 0) {
@@ -172,24 +211,30 @@ router.post('/payment', async (req, res) => {
             price, 
             quantity
           ) VALUES (?, ?, ?, ?, ?)`,
-          [paymentId, item.id, item.name, item.price, item.quantity]
+          [paymentId, item.id, item.name, item.price, item.quantity],
         );
       }
 
       // Commit the transaction
       await connection.commit();
 
-      res.status(201).json({ success: true, message: 'Payment processed successfully.' });
+      res
+        .status(201)
+        .json({ success: true, message: "Payment processed successfully." });
     } else {
       // Rollback the transaction if payment insertion fails
       await connection.rollback();
-      res.status(500).json({ success: false, message: 'Failed to process payment.' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to process payment." });
     }
   } catch (err) {
     // Rollback the transaction on error
     if (connection) await connection.rollback();
-    console.error('Error processing payment:', err);
-    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+    console.error("Error processing payment:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   } finally {
     // Release the connection back to the pool
     if (connection) connection.release();
@@ -197,112 +242,129 @@ router.post('/payment', async (req, res) => {
 });
 
 // GET /api/payments - Fetch all payments
-router.get('/payments', async (req, res) => {
+router.get("/payments", async (req, res) => {
   try {
-    const [payments] = await pool.query('SELECT * FROM payments');
+    const [payments] = await pool.query("SELECT * FROM payments");
     res.json(payments);
   } catch (error) {
-    console.error('Error fetching payments:', error);
-    res.status(500).json({ error: 'Failed to fetch payments' });
+    console.error("Error fetching payments:", error);
+    res.status(500).json({ error: "Failed to fetch payments" });
   }
 });
 
-  // POST /api/return - Process return for the cart
-router.post('/returns', async (req, res) => {
-    const { returnReason, cartItems } = req.body;
-  
-    // Validate required fields
-    if (!returnReason || !cartItems || cartItems.length === 0) {
-      return res.status(400).json({ success: false, message: 'Return reason and cart items are required.' });
-    }
-  
-    try {
-      // Insert the return details into the returns table
-      const [returnResult] = await pool.execute(
-        `INSERT INTO returns (
+// POST /api/return - Process return for the cart
+router.post("/returns", async (req, res) => {
+  const { returnReason, cartItems } = req.body;
+
+  // Validate required fields
+  if (!returnReason || !cartItems || cartItems.length === 0) {
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "Return reason and cart items are required.",
+      });
+  }
+
+  try {
+    // Insert the return details into the returns table
+    const [returnResult] = await pool.execute(
+      `INSERT INTO returns (
           return_reason
         ) VALUES (?)`,
-        [returnReason]
-      );
-  
-      if (returnResult.affectedRows > 0) {
-        const returnId = returnResult.insertId;
-  
-        // Insert each cart item into the return_items table
-        for (const item of cartItems) {
-          await pool.execute(
-            `INSERT INTO return_items (
+      [returnReason],
+    );
+
+    if (returnResult.affectedRows > 0) {
+      const returnId = returnResult.insertId;
+
+      // Insert each cart item into the return_items table
+      for (const item of cartItems) {
+        await pool.execute(
+          `INSERT INTO return_items (
               return_id, 
               product_id, 
               product_name, 
               price, 
               quantity
             ) VALUES (?, ?, ?, ?, ?)`,
-            [returnId, item.product_id, item.product_name, item.price, item.quantity]
-          );
-        }
-  
-        // Clear the cart after return
-        await pool.execute('DELETE FROM cart');
-  
-        res.status(201).json({ success: true, message: 'Return processed successfully.' });
-      } else {
-        res.status(500).json({ success: false, message: 'Failed to process return.' });
+          [
+            returnId,
+            item.product_id,
+            item.product_name,
+            item.price,
+            item.quantity,
+          ],
+        );
       }
-    } catch (err) {
-      console.error('Error processing return:', err);
-      res.status(500).json({ success: false, message: 'Server error', error: err.message });
+
+      // Clear the cart after return
+      await pool.execute("DELETE FROM cart");
+
+      res
+        .status(201)
+        .json({ success: true, message: "Return processed successfully." });
+    } else {
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to process return." });
     }
-  });
+  } catch (err) {
+    console.error("Error processing return:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+});
 
 // GET /api/receipt/:id - Fetch a specific receipt by ID
-router.put('/payments/:id/cancel', async (req, res) => {
+router.put("/payments/:id/cancel", async (req, res) => {
   try {
-      const { id } = req.params;
-      
-      // First verify the receipt exists
-      const [receipt] = await pool.execute(
-          'SELECT id FROM payments WHERE id = ?',
-          [id]
-      );
+    const { id } = req.params;
 
-      if (receipt.length === 0) {
-          return res.status(404).json({ 
-              success: false, 
-              message: 'Receipt not found' 
-          });
-      }
+    // First verify the receipt exists
+    const [receipt] = await pool.execute(
+      "SELECT id FROM payments WHERE id = ?",
+      [id],
+    );
 
-      // Update status to Inactive
-      const [result] = await pool.execute(
-          'UPDATE payments SET status = "Inactive" WHERE id = ?',
-          [id]
-      );
-
-      if (result.affectedRows === 0) {
-          return res.status(400).json({ 
-              success: false, 
-              message: 'Receipt could not be cancelled' 
-          });
-      }
-
-      res.json({ 
-          success: true, 
-          message: 'Receipt cancelled successfully' 
+    if (receipt.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Receipt not found",
       });
+    }
+
+    // Update status to Inactive
+    const [result] = await pool.execute(
+      'UPDATE payments SET status = "Inactive" WHERE id = ?',
+      [id],
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Receipt could not be cancelled",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Receipt cancelled successfully",
+    });
   } catch (error) {
-      console.error('Error cancelling receipt:', error);
-      res.status(500).json({ 
-          success: false, 
-          message: 'Server error while cancelling receipt',
-          error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
+    console.error("Error cancelling receipt:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while cancelling receipt",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 });
 
 //------------------------------------------------POS Reorders-----------------------------------------------------------------------------------------------------//
 // GET /api/reorders - Fetch reorder products with sale quantity for the last 30 days
-router.get('/reorders', async (req, res) => {
+router.get("/reorders", async (req, res) => {
   try {
     // Fetch products and their sale quantities for the last 30 days
     const [products] = await pool.query(`
@@ -323,64 +385,78 @@ GROUP BY p.id
 
     res.status(200).json(products);
   } catch (error) {
-    console.error('Error fetching reorder products:', error);
-    res.status(500).json({ error: 'Failed to fetch reorder products' });
+    console.error("Error fetching reorder products:", error);
+    res.status(500).json({ error: "Failed to fetch reorder products" });
   }
 });
 
 //-------------------------------------------------------------POS Expenses-------------------------------------------------------------------------------------------------//
 // GET /api/pos_expenses - Fetch all expenses
-router.get('/pos_expenses', async (req, res) => {
+router.get("/pos_expenses", async (req, res) => {
   try {
-    const [pos_expenses] = await pool.query('SELECT * FROM pos_expenses');
+    const [pos_expenses] = await pool.query("SELECT * FROM pos_expenses");
     res.status(200).json(pos_expenses);
   } catch (error) {
-    console.error('Error fetching expenses:', error);
-    res.status(500).json({ error: 'Failed to fetch expenses' });
+    console.error("Error fetching expenses:", error);
+    res.status(500).json({ error: "Failed to fetch expenses" });
   }
 });
 
 // POST /api/pos_expenses - Add a new expense
-router.post('/pos_expenses', async (req, res) => {
+router.post("/pos_expenses", async (req, res) => {
   const { date, expense, amount, createdBy } = req.body;
 
   // Validate required fields
   if (!date || !expense || !amount || !createdBy) {
-    return res.status(400).json({ success: false, message: 'All fields are required.' });
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required." });
   }
 
   try {
     const [result] = await pool.query(
       `INSERT INTO pos_expenses (date, expense, amount, created_by) VALUES (?, ?, ?, ?)`,
-      [date, expense, amount, createdBy]
+      [date, expense, amount, createdBy],
     );
 
     if (result.affectedRows > 0) {
-      res.status(201).json({ success: true, message: 'Expense added successfully.' });
+      res
+        .status(201)
+        .json({ success: true, message: "Expense added successfully." });
     } else {
-      res.status(500).json({ success: false, message: 'Failed to add expense.' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to add expense." });
     }
   } catch (error) {
-    console.error('Error adding expense:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error adding expense:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 // DELETE /api/pos_expenses/:id - Delete an expense
-router.delete('/pos_expenses/:id', async (req, res) => {
+router.delete("/pos_expenses/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const [result] = await pool.query('DELETE FROM pos_expenses WHERE id = ?', [id]);
+    const [result] = await pool.query("DELETE FROM pos_expenses WHERE id = ?", [
+      id,
+    ]);
 
     if (result.affectedRows > 0) {
-      res.status(200).json({ success: true, message: 'Expense deleted successfully.' });
+      res
+        .status(200)
+        .json({ success: true, message: "Expense deleted successfully." });
     } else {
-      res.status(404).json({ success: false, message: 'Expense not found.' });
+      res.status(404).json({ success: false, message: "Expense not found." });
     }
   } catch (error) {
-    console.error('Error deleting expense:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error deleting expense:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 

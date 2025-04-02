@@ -1,11 +1,11 @@
-import express from 'express';
-import pool from '../config/db.js';
-import authenticateToken from '../middlewares/authenticateToken.js';
+import express from "express";
+import pool from "../config/db.js";
+import authenticateToken from "../middlewares/authenticateToken.js";
 
 const router = express.Router();
 
 // Dashboard summary data
-router.get('/summary', authenticateToken, async (req, res) => {
+router.get("/summary", authenticateToken, async (req, res) => {
   try {
     // Get sales data
     const [salesResult] = await pool.query(`
@@ -44,7 +44,7 @@ router.get('/summary', authenticateToken, async (req, res) => {
 
     // Format monthly sales data
     const monthlySalesData = Array(12).fill(0);
-    monthlySales.forEach(sale => {
+    monthlySales.forEach((sale) => {
       monthlySalesData[sale.month - 1] = Number(sale.amount || 0);
     });
 
@@ -57,24 +57,23 @@ router.get('/summary', authenticateToken, async (req, res) => {
         totalReceipts: salesResult[0].total_receipts,
         totalProducts: productsResult[0].total_products,
         totalCustomers: customersResult[0].total_customers,
-        monthlySales: monthlySalesData
-      }
+        monthlySales: monthlySalesData,
+      },
     });
-
   } catch (error) {
-    console.error('Dashboard error:', error);
+    console.error("Dashboard error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to load dashboard data'
+      message: "Failed to load dashboard data",
     });
   }
 });
 
 // Cashier performance data
-router.get('/cashiers', authenticateToken, async (req, res) => {
+router.get("/cashiers", authenticateToken, async (req, res) => {
   try {
-    console.log('Fetching cashier data...');
-    
+    console.log("Fetching cashier data...");
+
     const [cashiers] = await pool.query(`
       SELECT 
         u.id,
@@ -88,42 +87,41 @@ router.get('/cashiers', authenticateToken, async (req, res) => {
       GROUP BY u.id, u.username
     `);
 
-    console.log('Raw cashier data:', cashiers);
+    console.log("Raw cashier data:", cashiers);
 
     // Safe number conversion and formatting
     const formatCurrency = (value) => {
-      const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+      const num = typeof value === "string" ? parseFloat(value) : Number(value);
       return isNaN(num) ? 0 : Number(num.toFixed(2));
     };
 
-    const formattedCashiers = cashiers.map(c => ({
+    const formattedCashiers = cashiers.map((c) => ({
       id: c.id,
       name: c.name,
       sale: formatCurrency(c.sale),
       cash: formatCurrency(c.cash),
-      voucher: formatCurrency(c.voucher)
+      voucher: formatCurrency(c.voucher),
     }));
 
-    console.log('Formatted cashier data:', formattedCashiers);
+    console.log("Formatted cashier data:", formattedCashiers);
 
     res.json({
       success: true,
-      data: formattedCashiers
+      data: formattedCashiers,
     });
-
   } catch (error) {
-    console.error('Detailed cashiers error:', {
+    console.error("Detailed cashiers error:", {
       message: error.message,
       stack: error.stack,
       sql: error.sql,
       errno: error.errno,
-      code: error.code
+      code: error.code,
     });
-    
+
     res.status(500).json({
       success: false,
-      message: 'Failed to load cashier data',
-      error: process.env.NODE_ENV === 'development' ? error.message : null
+      message: "Failed to load cashier data",
+      error: process.env.NODE_ENV === "development" ? error.message : null,
     });
   }
 });

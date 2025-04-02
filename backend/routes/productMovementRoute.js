@@ -1,10 +1,10 @@
-import express from 'express';
-import pool from '../config/db.js';
+import express from "express";
+import pool from "../config/db.js";
 
 const router = express.Router();
 
 // Get product movement report
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   const { startDate, endDate, productId } = req.query;
 
   try {
@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
     const salesParams = [startDate, endDate];
 
     if (productId) {
-      salesQuery += ' AND pi.product_id = ?';
+      salesQuery += " AND pi.product_id = ?";
       salesParams.push(productId);
     }
 
@@ -72,28 +72,33 @@ router.get('/', async (req, res) => {
     `;
 
     const purchaseParams = [startDate, endDate];
-    
+
     if (productId) {
-      purchaseQuery += ' AND product = (SELECT product_name FROM products WHERE id = ?)';
+      purchaseQuery +=
+        " AND product = (SELECT product_name FROM products WHERE id = ?)";
       purchaseParams.push(productId);
     }
 
     // Execute both queries
     const [sales] = await pool.query(salesQuery, salesParams);
     const [purchases] = await pool.query(purchaseQuery, purchaseParams);
-    const movements = [...sales, ...purchases].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const movements = [...sales, ...purchases].sort(
+      (a, b) => new Date(b.date) - new Date(a.date),
+    );
 
     // Calculate summary data
     const summary = {
       productSales: 0,
       costDiscounts: 0,
-      profitLoss: 0
+      profitLoss: 0,
     };
 
-    movements.forEach(movement => {
-      if (movement.type === 'Sale') {
-        summary.productSales += Number(movement.price) * Number(movement.productOut);
-        summary.costDiscounts += Number(movement.cost) * Number(movement.productOut);
+    movements.forEach((movement) => {
+      if (movement.type === "Sale") {
+        summary.productSales +=
+          Number(movement.price) * Number(movement.productOut);
+        summary.costDiscounts +=
+          Number(movement.cost) * Number(movement.productOut);
       }
     });
 
@@ -102,20 +107,19 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       movements,
-      summary
+      summary,
     });
-
   } catch (err) {
-    console.error('Error fetching product movement:', err);
+    console.error("Error fetching product movement:", err);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: "Server error",
     });
   }
 });
 
 // Get all products for dropdown
-router.get('/products', async (req, res) => {
+router.get("/products", async (req, res) => {
   try {
     const [products] = await pool.query(`
       SELECT id, product_name 
@@ -125,10 +129,10 @@ router.get('/products', async (req, res) => {
     `);
     res.json({ success: true, products });
   } catch (err) {
-    console.error('Error fetching products:', err);
+    console.error("Error fetching products:", err);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: "Server error",
     });
   }
 });
