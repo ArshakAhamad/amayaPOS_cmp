@@ -12,26 +12,17 @@ const Logout = () => {
 
   return (
     <div className="logout-wrapper">
-      <button className="logout-btn" onClick={() => setShowConfirm(true)}>
-        Logout
-      </button>
-
-      {showConfirm && (
-        <div className="logout-confirm">
-          <p>Are you sure you want to logout?</p>
-          <div className="logout-actions">
-            <button
-              className="cancel-btn"
-              onClick={() => setShowConfirm(false)}
-            >
-              Cancel
-            </button>
-            <button className="confirm-btn" onClick={handleLogout}>
-              Yes, Logout
-            </button>
-          </div>
+      <div className="logout-confirm">
+        <p>Are you sure you want to logout?</p>
+        <div className="logout-actions">
+          <button className="cancel-btn" onClick={() => setShowConfirm(false)}>
+            Cancel
+          </button>
+          <button className="confirm-btn" onClick={handleLogout}>
+            Yes, Logout
+          </button>
         </div>
-      )}
+      </div>
 
       <style jsx>{`
         .logout-btn {
