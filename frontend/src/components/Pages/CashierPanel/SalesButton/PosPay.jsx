@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext } from "react";
 import Popup from "reactjs-popup";
 import { motion } from "framer-motion";
 import "reactjs-popup/dist/index.css";
+import Select from "react-select";
 import { CartContext } from "../../../../contexts/CartContext";
 
 const PosPay = () => {
@@ -95,7 +96,7 @@ const PosPay = () => {
           phone: customerPhone,
           receiptNumber: 2865,
           cash: cashPayment,
-          cardNumber: cardPayment, // Send card number (not amount)
+          cardNumber: cardPayment,
         }),
       });
 
@@ -108,22 +109,21 @@ const PosPay = () => {
         setCashPayment("");
         setCardPayment("");
         setGiftVoucher("");
+
+        // Safely clear the cart
+        if (clearCart && typeof clearCart === "function") {
+          clearCart();
+        } else {
+          // Fallback if clearCart is not available
+          console.warn("clearCart function not available");
+          // Alternative: Use your context's setCart if available
+        }
       } else {
         alert("Payment failed: " + (data.message || "Unknown error"));
       }
     } catch (err) {
       console.error("Payment error:", err);
       alert("Payment error: " + err.message);
-    }
-    // Add this check
-    if (typeof clearCart === "function") {
-      clearCart();
-    } else {
-      console.error("clearCart is not a function");
-      // Fallback: manually set cart to empty if context fails
-      if (typeof updateCartState === "function") {
-        updateCartState([]); // If you have another way to update cart
-      }
     }
   };
 
@@ -167,18 +167,55 @@ const PosPay = () => {
               placeholder="Alt + A (Barcode)"
               className="p-3 border border-gray-300 rounded-lg w-64"
             />
-            <select
-              className="p-3 border border-gray-300 rounded-lg w-full sm:w-[250px]"
-              onChange={handleProductSelect}
-              value={selectedProduct}
-            >
-              <option value="">Select Product</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  00{product.id}
-                </option>
-              ))}
-            </select>
+            <Select
+              options={products.map((product) => ({
+                value: product.id,
+                label: `${product.product_name} (LKR ${product.price.toFixed(
+                  2
+                )})`,
+              }))}
+              onChange={(selectedOption) => {
+                if (selectedOption) {
+                  const selectedProduct = products.find(
+                    (product) => product.id === selectedOption.value
+                  );
+                  if (selectedProduct) {
+                    const isProductInCart = cart.some(
+                      (product) => product.id === selectedProduct.id
+                    );
+                    if (!isProductInCart) {
+                      const newProduct = {
+                        id: selectedProduct.id,
+                        name: selectedProduct.product_name,
+                        price: selectedProduct.price,
+                        quantity: 1,
+                        discount: 0,
+                      };
+                      addToCart(newProduct);
+                    } else {
+                      alert("Product is already in the cart.");
+                    }
+                  }
+                }
+              }}
+              placeholder="Select Product"
+              className="react-select-container"
+              classNamePrefix="react-select"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: "44px",
+                  borderColor: "#d1d5db",
+                  "&:hover": {
+                    borderColor: "#d1d5db",
+                  },
+                }),
+                menu: (base) => ({
+                  ...base,
+                  zIndex: 9999,
+                }),
+              }}
+            />
           </div>
 
           {/* Held Orders Section */}

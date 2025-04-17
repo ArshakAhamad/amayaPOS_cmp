@@ -2,13 +2,13 @@ import { v4 as uuidv4 } from "uuid";
 import React, { useState, useEffect, useContext } from "react";
 import Popup from "reactjs-popup";
 import { motion } from "framer-motion";
+import Select from "react-select";
 import "reactjs-popup/dist/index.css";
 import { CartContext } from "../../../../contexts/CartContext";
 
 const PosPay = () => {
   const { cart, addToCart, updateQuantity, removeFromCart, clearCart } =
     useContext(CartContext);
-  const [selectedProduct, setSelectedProduct] = useState("");
   const [isPopupOpen, setPopupOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [customerPhone, setCustomerPhone] = useState("");
@@ -17,6 +17,14 @@ const PosPay = () => {
   const [giftVoucher, setGiftVoucher] = useState("");
   const [heldOrders, setHeldOrders] = useState([]);
   const [isHoldOrderPopupOpen, setHoldOrderPopupOpen] = useState(false);
+  const [editingRows, setEditingRows] = useState({});
+
+  // Format products for react-select
+  const allProducts = products.map((product) => ({
+    value: product.id,
+    label: `${product.product_name} (LKR ${product.price.toFixed(2)})`,
+    price: product.price,
+  }));
 
   // Fetch products from the backend
   useEffect(() => {
@@ -45,13 +53,12 @@ const PosPay = () => {
       .toFixed(2);
   };
 
-  // Handle product selection
-  const handleProductSelect = (event) => {
-    const selectedValue = event.target.value;
-    setSelectedProduct(selectedValue);
+  // Handle product selection from main dropdown
+  const handleProductSelect = (selectedOption) => {
+    if (!selectedOption) return;
 
     const selectedProduct = products.find(
-      (product) => product.id === parseInt(selectedValue)
+      (product) => product.id === selectedOption.value
     );
 
     if (selectedProduct) {
@@ -70,6 +77,43 @@ const PosPay = () => {
 
         console.log("New Product Added to Cart:", newProduct);
         addToCart(newProduct);
+      } else {
+        alert("Product is already in the cart.");
+      }
+    }
+  };
+
+  // Handle product edit in cart table
+  const handleProductEdit = (selectedOption, index) => {
+    if (!selectedOption) return;
+
+    const selectedProduct = products.find(
+      (product) => product.id === selectedOption.value
+    );
+
+    if (selectedProduct) {
+      const isProductInCart = cart.some(
+        (product, i) => product.id === selectedProduct.id && i !== index
+      );
+
+      if (!isProductInCart) {
+        const updatedProduct = {
+          id: selectedProduct.id,
+          name: selectedProduct.product_name,
+          price: selectedProduct.price,
+          quantity: cart[index].quantity, // Keep the same quantity
+          discount: cart[index].discount, // Keep the same discount
+        };
+
+        // Create a new cart array with the updated product
+        const updatedCart = [...cart];
+        updatedCart[index] = updatedProduct;
+
+        // Use context to update the entire cart
+        clearCart(); // Clear current cart
+        updatedCart.forEach((item) => addToCart(item)); // Add all items back
+
+        setEditingRows({ ...editingRows, [index]: false }); // Exit edit mode
       } else {
         alert("Product is already in the cart.");
       }
@@ -95,7 +139,7 @@ const PosPay = () => {
           phone: customerPhone,
           receiptNumber: 2865,
           cash: cashPayment,
-          cardNumber: cardPayment, // Send card number (not amount)
+          cardNumber: cardPayment,
         }),
       });
 
@@ -108,22 +152,13 @@ const PosPay = () => {
         setCashPayment("");
         setCardPayment("");
         setGiftVoucher("");
+        clearCart();
       } else {
         alert("Payment failed: " + (data.message || "Unknown error"));
       }
     } catch (err) {
       console.error("Payment error:", err);
       alert("Payment error: " + err.message);
-    }
-    // Add this check
-    if (typeof clearCart === "function") {
-      clearCart();
-    } else {
-      console.error("clearCart is not a function");
-      // Fallback: manually set cart to empty if context fails
-      if (typeof updateCartState === "function") {
-        updateCartState([]); // If you have another way to update cart
-      }
     }
   };
 
@@ -134,7 +169,7 @@ const PosPay = () => {
       return;
     }
 
-    const orderId = uuidv4(); // Generate unique ID
+    const orderId = uuidv4();
     const newHeldOrder = {
       id: orderId,
       items: [...cart],
@@ -167,18 +202,39 @@ const PosPay = () => {
               placeholder="Alt + A (Barcode)"
               className="p-3 border border-gray-300 rounded-lg w-64"
             />
-            <select
-              className="p-3 border border-gray-300 rounded-lg w-full sm:w-[250px]"
-              onChange={handleProductSelect}
-              value={selectedProduct}
-            >
-              <option value="">Select Product</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  00{product.id}
-                </option>
-              ))}
-            </select>
+            <div className="mt-2">
+              <Select
+                options={allProducts}
+                value={
+                  product.product_id
+                    ? allProducts.find(
+                        (opt) => opt.value === product.product_id
+                      )
+                    : null
+                }
+                onChange={(selectedOption) =>
+                  handleProductSelect(selectedOption, index)
+                }
+                placeholder="Select Product 🔍"
+                isClearable
+                className="basic-single"
+                classNamePrefix="select"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    minHeight: "42px",
+                    borderColor: "#d1d5db",
+                    "&:hover": {
+                      borderColor: "#d1d5db",
+                    },
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    zIndex: 9999,
+                  }),
+                }}
+              />
+            </div>
           </div>
 
           {/* Held Orders Section */}
@@ -216,7 +272,7 @@ const PosPay = () => {
                 <th className="px-4 py-2 text-left">Price (LKR)</th>
                 <th className="px-4 py-2 text-center">Quantity</th>
                 <th className="px-4 py-2 text-left">Total (LKR)</th>
-                <th className="px-4 py-2 text-left">Remove</th>
+                <th className="px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -228,8 +284,53 @@ const PosPay = () => {
                 </tr>
               ) : (
                 cart.map((product, index) => (
-                  <tr key={product.id} className="border-b border-gray-500">
-                    <td className="px-4 py-3">{product.name}</td>
+                  <tr
+                    key={`${product.id}-${index}`}
+                    className="border-b border-gray-500"
+                  >
+                    <td className="px-4 py-3">
+                      {editingRows[index] ? (
+                        <Select
+                          options={allProducts}
+                          value={allProducts.find(
+                            (opt) => opt.value === product.id
+                          )}
+                          onChange={(selectedOption) =>
+                            handleProductEdit(selectedOption, index)
+                          }
+                          placeholder="Select Product"
+                          isClearable
+                          className="basic-single"
+                          classNamePrefix="select"
+                          styles={{
+                            control: (base) => ({
+                              ...base,
+                              minHeight: "42px",
+                              borderColor: "#d1d5db",
+                              "&:hover": {
+                                borderColor: "#d1d5db",
+                              },
+                            }),
+                            menu: (base) => ({
+                              ...base,
+                              zIndex: 9999,
+                            }),
+                          }}
+                        />
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="p-2">{product.name}</span>
+                          <button
+                            onClick={() =>
+                              setEditingRows({ ...editingRows, [index]: true })
+                            }
+                            className="text-blue-500 hover:text-blue-700 text-sm"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3">{product.price.toFixed(2)}</td>
                     <td className="px-4 py-3 text-center">
                       <input
@@ -245,13 +346,23 @@ const PosPay = () => {
                     <td className="px-4 py-3">
                       {(product.price * product.quantity).toFixed(2)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 flex space-x-2">
                       <button
                         className="text-red-500 hover:text-red-700"
                         onClick={() => removeFromCart(product.id)}
                       >
                         (X)
                       </button>
+                      {editingRows[index] && (
+                        <button
+                          className="text-gray-300 hover:text-white text-sm"
+                          onClick={() =>
+                            setEditingRows({ ...editingRows, [index]: false })
+                          }
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -380,12 +491,10 @@ const PosPay = () => {
         }}
       >
         {(close) => {
-          // Calculate balance based ONLY on cash payment
           const totalAmount = parseFloat(calculateTotal());
           const cashAmount = parseFloat(cashPayment) || 0;
-          const balance = cashAmount - totalAmount; // Only use cash payment for balance
+          const balance = cashAmount - totalAmount;
 
-          // Determine balance display
           const balanceClass =
             balance >= 0
               ? "text-green-600 bg-green-100 border-green-500"
@@ -411,14 +520,9 @@ const PosPay = () => {
               <div className="w-full mb-4 bg-gray-100 p-4 rounded-lg">
                 <div className="flex justify-between mb-2">
                   <span className="font-medium">Subtotal:</span>
-
                   <span>LKR {totalAmount.toFixed(2)}</span>
                 </div>{" "}
                 <br></br>
-                {/*<div className="flex justify-between mb-2">
-            <span className="font-medium">Tax:</span>
-            <span>LKR 0.00</span>
-          </div>*/}
                 <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2">
                   <span>Total:</span>
                   <span>LKR {totalAmount.toFixed(2)}</span>

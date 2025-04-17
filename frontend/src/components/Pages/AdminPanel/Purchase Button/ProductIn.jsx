@@ -148,7 +148,6 @@ const ProductIn = () => {
   };
 
   // Remove a product row
-  // Remove a product row
   const handleRemoveProduct = async (index, productId) => {
     if (productDetails.length <= 1) {
       alert("You must have at least one product");
