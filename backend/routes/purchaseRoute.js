@@ -48,7 +48,7 @@ router.post("/productin", async (req, res) => {
     // First get supplier details
     const [supplierRows] = await pool.query(
       "SELECT supplier_name FROM suppliers WHERE id = ?",
-      [supplierId],
+      [supplierId]
     );
 
     if (supplierRows.length === 0) {
@@ -79,7 +79,7 @@ router.post("/productin", async (req, res) => {
           product.totalCost || 0,
           product.stock || 0,
           supplierName,
-        ],
+        ]
       );
     }
 
@@ -198,57 +198,145 @@ router.get("/product-returns", async (req, res) => {
 });
 
 // POST create new product return
-router.post("/product-returns", async (req, res) => {
-  const { returns } = req.body;
+router.post("/product_returns", async (req, res) => {
+  console.log("Request body:", req.body);
 
-  if (!returns || !Array.isArray(returns) || returns.length === 0) {
-    return res
-      .status(400)
-      .json({ success: false, message: "No return data provided" });
+  if (!req.body.returns || !Array.isArray(req.body.returns)) {
+    return res.status(400).json({
+      success: false,
+      message: "Expected { returns: [...] }",
+    });
   }
 
+  const { returns } = req.body;
+  const connection = await pool.getConnection();
+
   try {
-    await pool.execute("START TRANSACTION");
+    await connection.beginTransaction();
 
-    // Insert each return item
     for (const item of returns) {
-      const {
-        date,
-        product_id,
-        unitCost,
-        quantity,
-        totalCost,
-        avgCost,
-        stock,
-      } = item;
+      // Validate required fields
+      if (!item.date || !item.product_id) {
+        throw new Error(`Missing required fields: ${JSON.stringify(item)}`);
+      }
 
-      await pool.execute(
+      // Insert return
+      const [insertResult] = await connection.query(
         `INSERT INTO product_returns 
-          (date, product_id, unit_cost, quantity, total_cost, avg_cost, stock) 
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [date, product_id, unitCost, quantity, totalCost, avgCost, stock],
+         (date, product_id, unit_cost, quantity, total_cost, avg_cost, stock)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          item.date,
+          item.product_id,
+          parseFloat(item.unit_cost) || 0,
+          parseInt(item.quantity) || 0,
+          parseFloat(item.total_cost) || 0,
+          parseFloat(item.avg_cost) || 0,
+          parseInt(item.stock) || 0,
+        ]
       );
 
-      // Update product stock in products table
-      await pool.execute(
+      if (insertResult.affectedRows !== 1) {
+        throw new Error("Failed to insert product return");
+      }
+
+      // Update product
+      await connection.query(
         `UPDATE products SET 
-          last_cost = ?,
-          avg_cost = ?
-          WHERE id = ?`,
-        [unitCost, avgCost, product_id],
+         last_cost = ?,
+         avg_cost = ?
+         WHERE id = ?`,
+        [
+          parseFloat(item.unit_cost) || 0,
+          parseFloat(item.avg_cost) || 0,
+          item.product_id,
+        ]
       );
     }
 
-    await pool.execute("COMMIT");
-    res
-      .status(201)
-      .json({ success: true, message: "Product returns saved successfully" });
+    await connection.commit();
+    res.status(201).json({
+      success: true,
+      message: `${returns.length} product returns saved successfully`,
+      returns,
+    });
   } catch (err) {
-    await pool.execute("ROLLBACK");
-    console.error("Error saving product returns:", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to save product returns" });
+    await connection.rollback();
+    console.error("Database error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save product returns",
+      error: err.message,
+      sqlError: err.sqlMessage, // Include SQL error details for debugging
+    });
+  } finally {
+    connection.release();
+  }
+});
+
+// DELETE a product return
+router.delete("/product_returns/:id", async (req, res) => {
+  const { id } = req.params;
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // First get the return details for logging/audit
+    const [returnRows] = await connection.query(
+      "SELECT * FROM product_returns WHERE id = ?",
+      [id]
+    );
+
+    if (returnRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Product return not found",
+      });
+    }
+
+    const returnItem = returnRows[0];
+
+    // Delete the return
+    const [result] = await connection.query(
+      "DELETE FROM product_returns WHERE id = ?",
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Failed to delete product return",
+      });
+    }
+
+    // Optionally: Update product costs if needed
+    // await connection.query(
+    //   `UPDATE products SET
+    //    last_cost = ?,
+    //    avg_cost = ?
+    //    WHERE id = ?`,
+    //   [newCost, newAvgCost, returnItem.product_id]
+    // );
+
+    await connection.commit();
+    res.json({
+      success: true,
+      message: "Product return deleted successfully",
+      deletedItem: returnItem,
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error("Error deleting product return:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
+  } finally {
+    connection.release();
   }
 });
 
@@ -270,7 +358,7 @@ router.get("/products/suggestions", async (req, res) => {
         WHERE product_name LIKE ? OR barcode LIKE ?
         LIMIT 10
       `,
-      [`%${query}%`, `%${query}%`],
+      [`%${query}%`, `%${query}%`]
     );
 
     res.status(200).json({ success: true, products });

@@ -4,17 +4,17 @@
 
 /* Root Variables */
 :root {
-  --primary-color: #1E3A8A;
-  --secondary-color: #E0F2FF;
-  --text-color: #1F2937;
+  --primary-color: #1e3a8a;
+  --secondary-color: #e0f2ff;
+  --text-color: #1f2937;
   --sidebar-width-expanded: 16rem;
   --sidebar-width-collapsed: 5rem;
 }
 
 /* Global Styles */
 body {
-  font-family: 'Arial', sans-serif;
-  background-color: #F9FAFB;
+  font-family: "Arial", sans-serif;
+  background-color: #f9fafb;
   margin-top: 85px;
   margin-bottom: 90px;
   padding: 0;
@@ -48,7 +48,6 @@ body {
 
 /* When sidebar is collapsed */
 .sidebar.w-20 {
-
   width: 5rem; /* Use your variable for collapsed width */
 }
 
@@ -110,7 +109,7 @@ body {
 .topbar-icons {
   display: flex;
   margin-right: 30px;
-  height:20px;
+  height: 20px;
   justify-content: right;
   flex-grow: 1;
   gap: 50px; /* Adjust spacing between icons */
@@ -125,7 +124,7 @@ body {
   width: 40px; /* Increased size */
   height: 40px;
   border-radius: 50%;
-  background-color: #2563EB;
+  background-color: #2563eb;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease-in-out;
 }
@@ -151,7 +150,6 @@ body {
   transform: scale(1.2); /* Slightly larger on hover */
   color: #4180ff; /* Darker blue on hover */
 }
-
 
 /* ✅ Right Side - Profile Info */
 .topbar-right {
@@ -197,7 +195,7 @@ body {
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  color: #1E3A8A;
+  color: #1e3a8a;
 }
 
 .dropdown-item:hover {
@@ -215,12 +213,11 @@ body {
   }
 }
 
-
 /* Small Logo */
-.logo-small { 
+.logo-small {
   width: 17rem;
   height: auto;
-  margin-top: 20px; 
+  margin-top: 20px;
   margin-left: 13px; /* Adjust this value to get the right spacing */
 }
 
@@ -252,16 +249,14 @@ input,
 select,
 textarea {
   padding: 12px;
-  width: 100%; 
+  width: 100%;
   max-width: 300px;
   font-size: 14px;
   border-radius: 8px;
   border: 1px solid #ddd;
-  outline-color: #1E3A8A;
+  outline-color: #1e3a8a;
   transition: border-color 0.3s ease;
-  
 }
-
 
 .text-red-600 {
   color: #dc2626; /* Red color for critical values */
@@ -304,7 +299,7 @@ form textarea {
   font: -webkit-small-control;
   border-radius: 8px;
   border: 1px solid #ddd;
-  outline-color: #1E3A8A;
+  outline-color: #1e3a8a;
   width: 100%;
   margin-bottom: 16px;
 }
@@ -312,7 +307,7 @@ form textarea {
 /* Label styling */
 form label {
   font-size: 14px;
-  color: #1F2937;
+  color: #1f2937;
   font-weight: bold;
   display: block;
   margin-bottom: 6px;
@@ -334,7 +329,7 @@ form button {
 }
 
 form button:hover {
-  background-color: #2563EB;
+  background-color: #2563eb;
 }
 
 form button:focus {
@@ -380,7 +375,7 @@ form .flex.items-center {
 form input[type="radio"] {
   width: 14px; /* Adjust the radio button size */
   height: 14px;
-  accent-color: #2563EB; /* Color the radio button */
+  accent-color: #2563eb; /* Color the radio button */
   margin-bottom: -1px; /* Adjust the bottom margin for alignment */
   margin-left: -1px; /* Remove unnecessary left margin */
   margin-top: -2px; /* Adjust the top margin for better alignment */
@@ -478,7 +473,6 @@ form .flex.items-center p {
   background-color: #2563eb;
 }
 
-
 /* Responsive Design */
 @media screen and (max-width: 768px) {
   .gift-card-section {
@@ -497,10 +491,10 @@ form .flex.items-center p {
   justify-content: center;
   padding: 12px 0;
   background-color: #e0f2ff;
-  position: fixed;  /* Change position to fixed */
+  position: fixed; /* Change position to fixed */
   bottom: 0;
   left: 0;
-  z-index: 100;  /* Make sure footer is above other content */
+  z-index: 100; /* Make sure footer is above other content */
 }
 
 .footer {
@@ -514,7 +508,7 @@ form .flex.items-center p {
   background-color: #e0f2ff;
   border-radius: 8px;
   font-size: 14px;
-  color: #1F2937;
+  color: #1f2937;
   font-weight: 500;
   left: var(--sidebar-width-expanded);
   width: calc(100% - var(--sidebar-width-expanded));
@@ -526,16 +520,16 @@ form .flex.items-center p {
   width: calc(100% - var(--sidebar-width-collapsed));
 }
 .footer-text {
-  color: #1F2937;
+  color: #1f2937;
 }
 
 .footer-right {
-  color: #1F2937;
+  color: #1f2937;
   font-weight: 600;
 }
 
 .footer-link {
-  color: #2563EB;
+  color: #2563eb;
   font-weight: bold;
   text-decoration: none;
 }
@@ -587,10 +581,9 @@ form .flex.items-center p {
   background-color: rgba(59, 130, 246, 0.1);
 }
 
-
 /* Dashboard Container */
 .dashboard-container {
-  background-color: #F9FAFB;
+  background-color: #f9fafb;
   padding: 0px;
 }
 
@@ -620,14 +613,14 @@ form .flex.items-center p {
 }
 
 .cash-in-hand-container {
-  background-color: #F9FAFB;
+  background-color: #f9fafb;
   padding: 100px;
 }
 
 .menu-item {
   padding: 12px;
   font-size: 16px;
-  color: #1F2937;
+  color: #1f2937;
   cursor: pointer;
   transition: background-color 0.3s ease, padding-left 0.3s ease;
 }
@@ -654,7 +647,8 @@ table {
 }
 
 /* Adjusting table cell padding */
-th, td {
+th,
+td {
   padding: 18px; /* Increase padding for better spacing */
   text-align: left;
   border-bottom: 1px solid #ddd;
@@ -674,13 +668,13 @@ button {
 }
 
 button:hover {
-  background-color: #16387A;
+  background-color: #16387a;
 }
 
 /* Styling individual buttons (optional) */
 .export-buttons button {
   padding: 8px 15px;
-  background-color: #1E3A8A;
+  background-color: #1e3a8a;
   color: white;
   border: none;
   border-radius: 5px;
@@ -688,7 +682,7 @@ button:hover {
 }
 
 .export-buttons button:hover {
-  background-color: #16387A;
+  background-color: #16387a;
 }
 
 /* Responsive */
@@ -703,7 +697,6 @@ button:hover {
     transition: all 0.3s ease;
   }
 }
-
 
 /* Cashier Summary */
 .cashier-summary {
@@ -748,7 +741,7 @@ button:hover {
 /* Sales Page Container */
 .sales-container {
   padding: 100px;
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
 }
 
 /* Sales Header */
@@ -777,7 +770,7 @@ button:hover {
   margin-bottom: -10px;
   height: 40px;
   width: 120px;
-  background-color: #1E3A8A;
+  background-color: #1e3a8a;
   color: white;
   border: none;
   border-radius: 6px;
@@ -785,7 +778,7 @@ button:hover {
 }
 
 .generate-btn:hover {
-  background-color: #16387A;
+  background-color: #16387a;
 }
 
 /* Summary Cards */
@@ -837,7 +830,8 @@ button:hover {
   border-collapse: collapse;
 }
 
-.sales-table th, .sales-table td {
+.sales-table th,
+.sales-table td {
   padding: 10px;
   text-align: left;
   border-bottom: 1px solid #ddd;
@@ -867,16 +861,16 @@ button:hover {
 
 button {
   padding: 8px 15px;
-  background-color: #1E3A8A;
+  background-color: #1e3a8a;
   color: white;
   border: none;
   border-radius: 5px;
-  margin-right: 10px; 
+  margin-right: 10px;
   margin-top: 10px;
 }
 
 button:hover {
-  background-color: #16387A;
+  background-color: #16387a;
 }
 
 /* Modify the layout of buttons inside Add Voucher form */
@@ -899,7 +893,7 @@ button + button {
 /* Pagination Buttons */
 .pagination-button {
   padding: 10px 16px;
-  background-color: #16387A; /* Blue color */
+  background-color: #16387a; /* Blue color */
   color: white;
   border: none;
   border-radius: 6px;
@@ -918,7 +912,6 @@ button + button {
 .pagination-button.active {
   background-color: #0a1e3b; /* Darker shade for active */
 }
-
 
 /* ✅ Form Container */
 .login-form {
@@ -974,6 +967,26 @@ button + button {
   background: #fff;
 }
 
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-toggle-icon {
+  position: absolute;
+  right: 30px;
+  top: 40%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #666;
+  padding: 5px;
+}
+.password-toggle-icon1 {
+  left: 40px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #666;
+  padding: 5px;
+}
 /* ✅ Login as Different User */
 .login-alt {
   font-size: 14px;

@@ -15,26 +15,29 @@ const ProductReturn = () => {
       try {
         const [productsRes, returnsRes] = await Promise.all([
           axios.get("http://localhost:5000/api/products"),
-          axios.get("http://localhost:5000/api/product_returns")
+          axios.get("http://localhost:5000/api/product_returns"),
         ]);
 
         setAllProducts(productsRes.data.products || []);
-        
-        // Initialize with sample data if no returns exist
-        setProducts(returnsRes.data.returns?.length > 0 ? returnsRes.data.returns : [
-          {
-            date: new Date().toISOString().split('T')[0],
-            product_id: "",
-            product_name: "",
-            unit_cost: 0,
-            quantity: 1,
-            total_cost: 0,
-            avg_cost: 0,
-            stock: 0,
-            id: Date.now() // Temporary ID for new items
-          }
-        ]);
-        
+
+        setProducts(
+          returnsRes.data.returns?.length > 0
+            ? returnsRes.data.returns
+            : [
+                {
+                  date: new Date().toISOString().split("T")[0],
+                  product_id: "",
+                  product_name: "",
+                  unit_cost: 0,
+                  quantity: 1,
+                  total_cost: 0,
+                  avg_cost: 0,
+                  stock: 0,
+                  id: Date.now(),
+                },
+              ]
+        );
+
         setLoading(false);
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -48,24 +51,41 @@ const ProductReturn = () => {
 
   const handleInputChange = (e, index, field) => {
     const updatedProducts = [...products];
-    updatedProducts[index][field] = e.target.value;
-    
-    // Calculate totals when unit cost or quantity changes
+    const value = e.target.value;
+
+    if (
+      field === "product_id" &&
+      products.some(
+        (p) => p.product_id === value && p.id !== updatedProducts[index].id
+      )
+    ) {
+      alert("This product is already added!");
+      return;
+    }
+
+    updatedProducts[index][field] = value;
+
     if (field === "unit_cost" || field === "quantity") {
-      updatedProducts[index].total_cost = 
-        parseFloat(updatedProducts[index].unit_cost || 0) * 
+      updatedProducts[index].total_cost =
+        parseFloat(updatedProducts[index].unit_cost || 0) *
         parseFloat(updatedProducts[index].quantity || 0);
       updatedProducts[index].avg_cost = updatedProducts[index].total_cost;
     }
-    
+
     setProducts(updatedProducts);
   };
 
   const handleAddProduct = () => {
+    // Only allow adding if the last product is not empty
+    if (products.length > 0 && !products[products.length - 1].product_id) {
+      alert("Please fill the current product before adding a new one");
+      return;
+    }
+
     setProducts([
       ...products,
       {
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split("T")[0],
         product_id: "",
         product_name: "",
         unit_cost: 0,
@@ -73,34 +93,66 @@ const ProductReturn = () => {
         total_cost: 0,
         avg_cost: 0,
         stock: 0,
-        id: Date.now() // Temporary ID for new items
-      }
+        id: Date.now(),
+      },
     ]);
   };
 
   const handleRemoveProduct = async (index) => {
     const productToRemove = products[index];
-    
-    // If the product has an ID (exists in database), delete from backend
-    if (productToRemove.id && typeof productToRemove.id === 'number') {
-      try {
-        await axios.delete(`http://localhost:5000/api/product_returns/${productToRemove.id}`);
-      } catch (err) {
-        console.error("Error deleting product return:", err);
-        alert("Failed to delete product return from server");
-        return;
-      }
+
+    if (
+      !window.confirm("Are you sure you want to remove this product return?")
+    ) {
+      return;
     }
-    
-    // Remove from local state
-    const updatedProducts = products.filter((_, i) => i !== index);
-    setProducts(updatedProducts);
+
+    try {
+      if (productToRemove.id && typeof productToRemove.id === "number") {
+        await axios.delete(
+          `http://localhost:5000/api/product_returns/${productToRemove.id}`
+        );
+      }
+
+      const updatedProducts = products.filter((_, i) => i !== index);
+      setProducts(
+        updatedProducts.length > 0
+          ? updatedProducts
+          : [
+              {
+                date: new Date().toISOString().split("T")[0],
+                product_id: "",
+                product_name: "",
+                unit_cost: 0,
+                quantity: 1,
+                total_cost: 0,
+                avg_cost: 0,
+                stock: 0,
+                id: Date.now(),
+              },
+            ]
+      );
+    } catch (err) {
+      console.error("Error deleting product return:", err);
+      alert(
+        `Failed to delete product return: ${
+          err.response?.data?.message || err.message
+        }`
+      );
+    }
   };
 
   const handleProductSelect = (e, index) => {
     const productId = e.target.value;
-    const selected = allProducts.find(p => p.id == productId);
-    
+
+    // Check if product already exists in the list
+    if (products.some((p, i) => i !== index && p.product_id === productId)) {
+      alert("This product is already added!");
+      return;
+    }
+
+    const selected = allProducts.find((p) => p.id == productId);
+
     if (selected) {
       const updatedProducts = [...products];
       updatedProducts[index] = {
@@ -108,48 +160,51 @@ const ProductReturn = () => {
         product_id: selected.id,
         product_name: selected.product_name,
         unit_cost: selected.last_cost || 0,
-        stock: selected.min_quantity || 0
+        stock: selected.min_quantity || 0,
       };
-      
-      // Recalculate totals
-      updatedProducts[index].total_cost = 
+
+      updatedProducts[index].total_cost =
         updatedProducts[index].unit_cost * updatedProducts[index].quantity;
       updatedProducts[index].avg_cost = updatedProducts[index].total_cost;
-      
+
       setProducts(updatedProducts);
     }
   };
 
   const handleSubmit = async () => {
     try {
-      // Filter out empty products
-      const validProducts = products.filter(p => p.product_id);
-      
-      // Submit each product return
-      await Promise.all(
-        validProducts.map(product => {
-          if (product.id && typeof product.id === 'number') {
-            // Skip existing items (they're already in database)
-            return Promise.resolve();
-          }
-          return axios.post("http://localhost:5000/api/product_returns", {
-            date: product.date,
-            product_id: product.product_id,
-            unit_cost: product.unit_cost,
-            quantity: product.quantity,
-            total_cost: product.total_cost,
-            avg_cost: product.avg_cost,
-            stock: product.stock
-          });
-        })
+      const validProducts = products.filter((p) => p.product_id);
+
+      if (validProducts.length === 0) {
+        alert("No valid products to submit");
+        return;
+      }
+
+      const returns = validProducts.map((product) => ({
+        date: product.date,
+        product_id: product.product_id,
+        unitCost: product.unit_cost,
+        quantity: product.quantity,
+        totalCost: product.total_cost,
+        avgCost: product.avg_cost,
+        stock: product.stock,
+      }));
+
+      const response = await axios.post(
+        "http://localhost:5000/api/product_returns",
+        { returns }
       );
-      
-      alert("Product returns submitted successfully!");
-      // Refresh data
-      window.location.reload();
+
+      if (response.data.success) {
+        alert("Product returns submitted successfully!");
+        const returnsRes = await axios.get(
+          "http://localhost:5000/api/product_returns"
+        );
+        setProducts(returnsRes.data.returns || []);
+      }
     } catch (err) {
       console.error("Error submitting returns:", err);
-      alert("Failed to submit product returns");
+      alert(`Failed to submit product returns: ${err.message}`);
     }
   };
 
@@ -171,7 +226,7 @@ const ProductReturn = () => {
         <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
           <div className="text-red-500 text-center py-10">
             {error}
-            <button 
+            <button
               onClick={() => window.location.reload()}
               className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
@@ -196,13 +251,13 @@ const ProductReturn = () => {
               value={barcodeInput}
               onChange={(e) => setBarcodeInput(e.target.value)}
             />
-            <select 
+            <select
               className="p-3 border border-gray-300 rounded-lg w-64"
               value={selectedProduct}
               onChange={(e) => setSelectedProduct(e.target.value)}
             >
               <option value="">Select Product</option>
-              {allProducts.map(product => (
+              {allProducts.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.product_name}
                 </option>
@@ -218,9 +273,13 @@ const ProductReturn = () => {
               <tr>
                 <th className="px-6 py-3 text-left w-[12%]">Date</th>
                 <th className="px-6 py-3 text-left w-[20%]">Product</th>
-                <th className="px-6 py-3 text-right w-[12%]">Unit Cost (LKR)</th>
+                <th className="px-6 py-3 text-right w-[12%]">
+                  Unit Cost (LKR)
+                </th>
                 <th className="px-6 py-3 text-center w-[10%]">Quantity</th>
-                <th className="px-6 py-3 text-right w-[12%]">Total Cost (LKR)</th>
+                <th className="px-6 py-3 text-right w-[12%]">
+                  Total Cost (LKR)
+                </th>
                 <th className="px-6 py-3 text-right w-[12%]">Avg Cost (LKR)</th>
                 <th className="px-6 py-3 text-center w-[10%]">Stock</th>
                 <th className="px-6 py-3 text-center w-[12%]">Remove</th>
@@ -228,7 +287,10 @@ const ProductReturn = () => {
             </thead>
             <tbody>
               {products.map((product, index) => (
-                <tr key={product.id || index} className="border-b hover:bg-gray-50 transition">
+                <tr
+                  key={product.id || index}
+                  className="border-b hover:bg-gray-50 transition"
+                >
                   <td className="px-6 py-3">
                     <input
                       type="date"
@@ -243,8 +305,8 @@ const ProductReturn = () => {
                       onChange={(e) => handleProductSelect(e, index)}
                       className="w-full p-2 border rounded"
                     >
-                      <option value="">Select Product</option>
-                      {allProducts.map(p => (
+                      <option value="">Search Product</option>
+                      {allProducts.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.product_name}
                         </option>
@@ -306,7 +368,7 @@ const ProductReturn = () => {
           >
             Add New Product
           </button>
-          
+
           <button
             onClick={handleSubmit}
             className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -319,10 +381,12 @@ const ProductReturn = () => {
         <div className="flex justify-between items-center mt-6 p-4 bg-gray-100 rounded-lg">
           <p className="text-xl font-semibold">Total : </p>
           <p className="text-xl font-semibold text-red-500">
-            {products.reduce((acc, p) => acc + (parseFloat(p.total_cost) || 0), 0).toLocaleString('en-US', {
-              style: 'currency',
-              currency: 'LKR'
-            })}
+            {products
+              .reduce((acc, p) => acc + (parseFloat(p.total_cost) || 0), 0)
+              .toLocaleString("en-US", {
+                style: "currency",
+                currency: "LKR",
+              })}
           </p>
         </div>
       </div>

@@ -12,9 +12,12 @@ const SupplierList = () => {
     const fetchSuppliers = async () => {
       setLoading(true);
       try {
-        const response = await axios.get("http://localhost:5000/api/suppliers", {
-          params: { search: searchQuery },
-        });
+        const response = await axios.get(
+          "http://localhost:5000/api/suppliers",
+          {
+            params: { search: searchQuery },
+          }
+        );
         console.log("API Response:", response.data);
         console.log("Suppliers Data:", response.data.suppliers);
         setSuppliers(response.data.suppliers);
@@ -30,10 +33,13 @@ const SupplierList = () => {
 
   const handleStatusChange = async (id, index) => {
     try {
-      const response = await axios.post(`http://localhost:5000/api/suppliers/${id}/toggle-status`);
+      const response = await axios.post(
+        `http://localhost:5000/api/suppliers/${id}/toggle-status`
+      );
       if (response.data.success) {
         const updatedSuppliers = [...suppliers];
-        updatedSuppliers[index].status = updatedSuppliers[index].status === "Active" ? "Inactive" : "Active";
+        updatedSuppliers[index].status =
+          updatedSuppliers[index].status === "Active" ? "Inactive" : "Active";
         setSuppliers(updatedSuppliers);
       }
     } catch (error) {
@@ -94,11 +100,17 @@ const SupplierList = () => {
                 </tr>
               ) : (
                 suppliers.map((supplier, index) => (
-                  <tr key={supplier.id} className="border-b hover:bg-gray-50 transition">
+                  <tr
+                    key={supplier.id}
+                    className="border-b hover:bg-gray-50 transition"
+                  >
                     <td className="px-4 py-3">{index + 1}</td>
                     <td className="px-4 py-3">{supplier.supplier_name}</td>
                     <td className="px-4 py-3 text-right font-semibold">
-                      {typeof supplier.outstanding === 'number' ? supplier.outstanding.toFixed(2) : "N/A"} LKR
+                      {typeof supplier.outstanding === "number"
+                        ? supplier.outstanding.toFixed(2)
+                        : "N/A"}{" "}
+                      LKR
                     </td>
                     <td className="px-4 py-3">{supplier.created_at}</td>
                     <td className="px-4 py-3">{supplier.created_by}</td>
@@ -118,7 +130,7 @@ const SupplierList = () => {
                         onClick={() => handleStatusChange(supplier.id, index)}
                         className="text-blue-600 hover:text-blue-800 font-semibold"
                       >
-                        Toggle
+                        Change Status
                       </button>
                       <button
                         onClick={handleSupplierBills}

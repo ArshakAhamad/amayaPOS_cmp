@@ -1,9 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
-import { Chart, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import api from '../../../../../../backend/models/api';
+import React, { useState, useEffect } from "react";
+import { Line } from "react-chartjs-2";
+import {
+  Chart,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import api from "../../../../../../backend/models/api";
 
-Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+Chart.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Dashboard = () => {
   const [salesData, setSalesData] = useState({
@@ -13,57 +30,72 @@ const Dashboard = () => {
     totalReceipts: 0,
     totalProducts: 0,
     totalCustomers: 0,
-    monthlySales: Array(12).fill(0)
+    monthlySales: Array(12).fill(0),
   });
 
   const [cashierData, setCashierData] = useState([]);
   const [loading, setLoading] = useState({
     dashboard: true,
-    cashiers: true
+    cashiers: true,
   });
   const [error, setError] = useState({
     dashboard: null,
-    cashiers: null
+    cashiers: null,
   });
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   useEffect(() => {
     // Fetch dashboard summary data
     const fetchDashboardData = async () => {
       try {
-        const response = await api.get('/api/dashboard/summary');
+        const response = await api.get("/api/dashboard/summary");
         if (response.data.success) {
           setSalesData(response.data.data);
         } else {
-          setError(prev => ({...prev, dashboard: response.data.message}));
+          setError((prev) => ({ ...prev, dashboard: response.data.message }));
         }
       } catch (err) {
-        setError(prev => ({
-          ...prev, 
-          dashboard: err.response?.data?.message || 'Failed to load dashboard data'
+        setError((prev) => ({
+          ...prev,
+          dashboard:
+            err.response?.data?.message || "Failed to load dashboard data",
         }));
       } finally {
-        setLoading(prev => ({...prev, dashboard: false}));
+        setLoading((prev) => ({ ...prev, dashboard: false }));
       }
     };
 
     // Fetch cashier data
     const fetchCashierData = async () => {
       try {
-        const response = await api.get('/api/dashboard/cashiers');
+        const response = await api.get("/api/dashboard/cashiers");
         if (response.data.success) {
           setCashierData(response.data.data);
         } else {
-          setError(prev => ({...prev, cashiers: response.data.message}));
+          setError((prev) => ({ ...prev, cashiers: response.data.message }));
         }
       } catch (err) {
-        setError(prev => ({
-          ...prev, 
-          cashiers: err.response?.data?.message || 'Failed to load cashier data'
+        setError((prev) => ({
+          ...prev,
+          cashiers:
+            err.response?.data?.message || "Failed to load cashier data",
         }));
       } finally {
-        setLoading(prev => ({...prev, cashiers: false}));
+        setLoading((prev) => ({ ...prev, cashiers: false }));
       }
     };
 
@@ -75,13 +107,13 @@ const Dashboard = () => {
     labels: months,
     datasets: [
       {
-        label: 'Monthly Sales (LKR)',
+        label: "Monthly Sales (LKR)",
         data: salesData.monthlySales,
-        borderColor: '#1E3A8A',
-        backgroundColor: 'rgba(30, 58, 138, 0.2)',
+        borderColor: "#1E3A8A",
+        backgroundColor: "rgba(30, 58, 138, 0.2)",
         borderWidth: 2,
         fill: true,
-        tension: 0.4
+        tension: 0.4,
       },
     ],
   };
@@ -90,22 +122,22 @@ const Dashboard = () => {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { 
+      legend: {
         display: true,
-        position: 'top' 
+        position: "top",
       },
       tooltip: {
         callbacks: {
-          label: (context) => `LKR ${context.raw.toFixed(2)}`
-        }
-      }
+          label: (context) => `LKR ${context.raw.toFixed(2)}`,
+        },
+      },
     },
     scales: {
-      y: { 
+      y: {
         beginAtZero: true,
         ticks: {
-          callback: (value) => `LKR ${value.toFixed(2)}`
-        }
+          callback: (value) => `LKR ${value.toFixed(2)}`,
+        },
       },
     },
   };
@@ -131,19 +163,23 @@ const Dashboard = () => {
           {loading.dashboard ? (
             <div className="animate-pulse h-8 w-3/4 bg-gray-200 rounded mt-2"></div>
           ) : (
-            <p className="text-2xl font-bold">LKR {salesData.productSale.toFixed(2)}</p>
+            <p className="text-2xl font-bold">
+              LKR {salesData.productSale.toFixed(2)}
+            </p>
           )}
         </div>
-        
+
         <div className="dashboard-card p-4 bg-white rounded-lg shadow">
           <h3 className="text-lg font-medium">Voucher Sales</h3>
           {loading.dashboard ? (
             <div className="animate-pulse h-8 w-3/4 bg-gray-200 rounded mt-2"></div>
           ) : (
-            <p className="text-2xl font-bold">LKR {salesData.voucherSale.toFixed(2)}</p>
+            <p className="text-2xl font-bold">
+              LKR {salesData.voucherSale.toFixed(2)}
+            </p>
           )}
         </div>
-        
+
         <div className="dashboard-card p-4 bg-white rounded-lg shadow">
           <h3 className="text-lg font-medium">Total Products</h3>
           {loading.dashboard ? (
@@ -152,7 +188,7 @@ const Dashboard = () => {
             <p className="text-2xl font-bold">{salesData.totalProducts}</p>
           )}
         </div>
-        
+
         <div className="dashboard-card p-4 bg-white rounded-lg shadow">
           <h3 className="text-lg font-medium">Total Customers</h3>
           {loading.dashboard ? (
@@ -166,7 +202,7 @@ const Dashboard = () => {
       {/* Monthly Sales Graph */}
       <div className="monthly-sales mt-6 p-6 bg-white rounded-lg shadow">
         <h3 className="text-lg font-medium mb-4">Monthly Sales</h3>
-        <div className="w-full h-[500px] md:h-[450px] lg:h-[500px]"> 
+        <div className="w-full h-[500px] md:h-[450px] lg:h-[500px]">
           {loading.dashboard ? (
             <div className="animate-pulse h-full w-full bg-gray-200 rounded"></div>
           ) : (
@@ -177,36 +213,59 @@ const Dashboard = () => {
 
       {/* Cashier Summary Section */}
       <div className="cashier-summary mt-6">
-  
         <div className="cashier-summary mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading.cashiers ? (
-            Array(3).fill(0).map((_, index) => (
-              <div key={index} className="p-4 border border-gray-200 rounded-lg shadow-md">
-                <div className="animate-pulse h-6 w-3/4 bg-gray-200 rounded mb-4"></div>
-                <div className="animate-pulse h-4 w-full bg-gray-200 rounded mb-2"></div>
-                <div className="animate-pulse h-4 w-full bg-gray-200 rounded mb-2"></div>
-                <div className="animate-pulse h-4 w-full bg-gray-200 rounded"></div>
-              </div>
-            ))
+            Array(3)
+              .fill(0)
+              .map((_, index) => (
+                <div
+                  key={index}
+                  className="p-4 border border-gray-200 rounded-lg shadow-md"
+                >
+                  <div className="animate-pulse h-6 w-3/4 bg-gray-200 rounded mb-4"></div>
+                  <div className="animate-pulse h-4 w-full bg-gray-200 rounded mb-2"></div>
+                  <div className="animate-pulse h-4 w-full bg-gray-200 rounded mb-2"></div>
+                  <div className="animate-pulse h-4 w-full bg-gray-200 rounded"></div>
+                </div>
+              ))
           ) : error.cashiers ? (
             <div className="col-span-full text-center py-8">
               <p className="text-red-500">{error.cashiers}</p>
             </div>
           ) : cashierData.length > 0 ? (
             cashierData.map((cashier, index) => (
-              <div key={index} className="cashier-card p-4 bg-white rounded-lg shadow-md">
+              <div
+                key={index}
+                className="cashier-card p-4 bg-white rounded-lg shadow-md"
+              >
                 <h3 className="text-lg font-bold mb-3">{cashier.name}</h3>
-                <p className="mb-1">Total Sales: <span className="font-semibold">LKR {cashier.sale.toFixed(2)}</span></p>
-                <p className="mb-1">Cash: <span className="font-semibold">LKR {cashier.cash.toFixed(2)}</span></p>
-                <p>Vouchers: <span className="font-semibold">LKR {cashier.voucher.toFixed(2)}</span></p>
+                <p className="mb-1">
+                  Total Sales:{" "}
+                  <span className="font-semibold">
+                    LKR {cashier.sale.toFixed(2)}
+                  </span>
+                </p>
+                <p className="mb-1">
+                  Cash:{" "}
+                  <span className="font-semibold">
+                    LKR {cashier.cash.toFixed(2)}
+                  </span>
+                </p>
+                <p>
+                  Vouchers:{" "}
+                  <span className="font-semibold">
+                    LKR {cashier.voucher.toFixed(2)}
+                  </span>
+                </p>
               </div>
-            )) 
+            ))
           ) : (
             <div className="col-span-full text-center py-8">
               <p className="text-gray-500">No cashier data available</p>
             </div>
           )}
-        </div> <br></br>
+        </div>{" "}
+        <br></br>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 
 const ProductIn = () => {
   const [productDetails, setProductDetails] = useState([]);
@@ -6,12 +7,41 @@ const ProductIn = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [allProducts, setAllProducts] = useState([]);
+  const [editingRows, setEditingRows] = useState({});
 
-  // Fetch product details and suppliers on component mount
+  // Fetch product details, suppliers, and products on component mount
   useEffect(() => {
     fetchProductDetails();
     fetchSuppliers();
+    fetchProducts();
   }, []);
+
+  // Fetch all products from the backend
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("http://localhost:5000/api/products");
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setAllProducts(
+        data.products.map((p) => ({
+          value: p.id,
+          label: `${p.product_name} - ${p.price} LKR`,
+          product: p,
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Fetch all products from the backend
   const fetchProductDetails = async () => {
@@ -19,21 +49,27 @@ const ProductIn = () => {
       setIsLoading(true);
       setError(null);
       const response = await fetch("http://localhost:5000/api/productin");
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
       const data = await response.json();
-      setProductDetails(data.products.map(p => ({
-        ...p,
-        date: p.date || new Date().toISOString().split('T')[0],
-        unitCost: p.unitCost || "",
-        quantity: p.quantity || "",
-        totalCost: p.totalCost || "",
-        stock: p.stock || ""
-      })));
+      setProductDetails(
+        data.products.map((p) => ({
+          ...p,
+          date: p.date || new Date().toISOString().split("T")[0],
+          product_id: p.product_id || "",
+          product: p.product || "",
+          unitCost: p.unitCost || "",
+          quantity: p.quantity || "",
+          totalCost: p.totalCost || "",
+          stock: p.stock || "",
+        }))
+      );
     } catch (error) {
       console.error("Error fetching product details:", error);
       setError(error.message);
@@ -46,7 +82,7 @@ const ProductIn = () => {
   const fetchSuppliers = async () => {
     try {
       const response = await fetch("http://localhost:5000/api/suppliers");
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -59,11 +95,28 @@ const ProductIn = () => {
     }
   };
 
-  // Handle input changes for product fields
+  // Handle product selection
+  const handleProductSelect = (selectedOption, index) => {
+    const updatedProductDetails = [...productDetails];
+    if (selectedOption) {
+      updatedProductDetails[index].product_id = selectedOption.value;
+      updatedProductDetails[index].product =
+        selectedOption.product.product_name;
+      updatedProductDetails[index].unitCost =
+        selectedOption.product.price || "";
+    } else {
+      updatedProductDetails[index].product_id = "";
+      updatedProductDetails[index].product = "";
+      updatedProductDetails[index].unitCost = "";
+    }
+    setProductDetails(updatedProductDetails);
+  };
+
+  // Handle input changes for other fields
   const handleInputChange = (e, index, field) => {
     const updatedProductDetails = [...productDetails];
     const value = e.target.value;
-    
+
     updatedProductDetails[index][field] = value;
 
     // Recalculate totalCost if unitCost or quantity changes
@@ -81,7 +134,8 @@ const ProductIn = () => {
     setProductDetails([
       ...productDetails,
       {
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split("T")[0],
+        product_id: "",
         product: "",
         unitCost: "",
         quantity: "",
@@ -89,62 +143,77 @@ const ProductIn = () => {
         stock: "",
       },
     ]);
+    // Automatically set new row to edit mode
+    setEditingRows({ ...editingRows, [productDetails.length]: true });
   };
 
-  // Delete a product from the database
-  const handleDeleteProduct = async (productId) => {
-    if (!productId) {
-      // For new unsaved products, just remove from local state
-      return;
-    }
-
-    if (!window.confirm("Are you sure you want to delete this product?")) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await fetch(`http://localhost:5000/api/productin/${productId}`, {
-        method: "DELETE"
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-
-      alert("Product deleted successfully!");
-      fetchProductDetails(); // Refresh the list
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      alert(`Error deleting product: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Remove a product row from local state
-  const handleRemoveProduct = (index, productId) => {
+  // Remove a product row
+  // Remove a product row
+  const handleRemoveProduct = async (index, productId) => {
     if (productDetails.length <= 1) {
       alert("You must have at least one product");
       return;
     }
 
+    // If the product has an ID (already saved in database)
     if (productId) {
-      // If product has an ID, it's saved in the database
-      handleDeleteProduct(productId);
+      if (!window.confirm("Are you sure you want to delete this product?")) {
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          `http://localhost:5000/api/productin/${productId}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || `HTTP error! status: ${response.status}`
+          );
+        }
+
+        // Remove from local state after successful deletion
+        const updatedProducts = [...productDetails];
+        updatedProducts.splice(index, 1);
+        setProductDetails(updatedProducts);
+
+        // Remove from editing rows if it was being edited
+        const newEditing = { ...editingRows };
+        delete newEditing[index];
+        setEditingRows(newEditing);
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        setError(error.message);
+        alert(`Error deleting product: ${error.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       // For new unsaved products, just remove from local state
       const updatedProducts = [...productDetails];
       updatedProducts.splice(index, 1);
       setProductDetails(updatedProducts);
+
+      // Remove from editing rows if it was being edited
+      const newEditing = { ...editingRows };
+      delete newEditing[index];
+      setEditingRows(newEditing);
     }
   };
 
   // Save all products to the backend
   const handleSave = async () => {
-    // Filter out empty rows (where product is not specified)
-    const productsToSave = productDetails.filter(p => p.product && p.product.trim() !== "");
+    const productsToSave = productDetails.filter(
+      (p) =>
+        p.product_id !== undefined &&
+        p.product_id !== null &&
+        p.product_id !== ""
+    );
 
     if (productsToSave.length === 0) {
       alert("Please add at least one product before saving");
@@ -164,27 +233,31 @@ const ProductIn = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          products: productsToSave.map(p => ({
-            date: p.date || new Date().toISOString().split('T')[0],
+        body: JSON.stringify({
+          products: productsToSave.map((p) => ({
+            date: p.date || new Date().toISOString().split("T")[0],
+            product_id: p.product_id,
             product: p.product.trim(),
             unitCost: parseFloat(p.unitCost) || 0,
             quantity: parseInt(p.quantity) || 0,
             totalCost: parseFloat(p.totalCost) || 0,
-            stock: parseInt(p.stock) || 0
+            stock: parseInt(p.stock) || 0,
           })),
-          supplierId: selectedSupplier
+          supplierId: selectedSupplier,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
       const data = await response.json();
       alert("Products saved successfully!");
-      fetchProductDetails(); // Refresh the list
+      setEditingRows({}); // Exit all edit modes
+      fetchProductDetails();
     } catch (error) {
       console.error("Error saving products:", error);
       setError(error.message);
@@ -210,7 +283,7 @@ const ProductIn = () => {
             Error: {error}
           </div>
         )}
-        
+
         {/* Header Section */}
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <div className="flex items-center gap-4 flex-wrap">
@@ -226,7 +299,7 @@ const ProductIn = () => {
               required
             >
               <option value="">Select Supplier</option>
-              {suppliers.map(supplier => (
+              {suppliers.map((supplier) => (
                 <option key={supplier.id} value={supplier.id}>
                   {supplier.supplier_name}
                 </option>
@@ -268,7 +341,10 @@ const ProductIn = () => {
 
             <tbody>
               {productDetails.map((product, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50 transition">
+                <tr
+                  key={index}
+                  className="border-b hover:bg-gray-50 transition"
+                >
                   <td className="px-4 py-3">
                     <input
                       type="date"
@@ -279,13 +355,43 @@ const ProductIn = () => {
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <input
-                      type="text"
-                      value={product.product}
-                      onChange={(e) => handleInputChange(e, index, "product")}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
+                    {editingRows[index] || !product.id ? (
+                      <Select
+                        options={allProducts}
+                        value={
+                          product.product_id
+                            ? allProducts.find(
+                                (opt) => opt.value === product.product_id
+                              )
+                            : null
+                        }
+                        onChange={(selectedOption) =>
+                          handleProductSelect(selectedOption, index)
+                        }
+                        placeholder="Select Product"
+                        isClearable
+                        className="basic-single"
+                        classNamePrefix="select"
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "42px",
+                            borderColor: "#d1d5db",
+                            "&:hover": {
+                              borderColor: "#d1d5db",
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            zIndex: 9999,
+                          }),
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="p-2">{product.product}</span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <input
@@ -333,6 +439,14 @@ const ProductIn = () => {
                     >
                       Remove
                     </button>
+                    {/*    <button
+                      onClick={() =>
+                        setEditingRows({ ...editingRows, [index]: true })
+                      }
+                      className="ml-2 text-blue-500 hover:text-blue-700"
+                    >
+                      Edit Product
+                    </button> */}
                   </td>
                 </tr>
               ))}
@@ -348,13 +462,20 @@ const ProductIn = () => {
           >
             Add New Product
           </button>
-          
+
           <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg min-w-[300px]">
             <p className="text-xl font-semibold">Total</p>
             <p className="text-xl font-semibold text-red-500">
               {productDetails
-                .reduce((acc, product) => acc + (parseFloat(product.totalCost) || 0), 0)
-                .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} LKR
+                .reduce(
+                  (acc, product) => acc + (parseFloat(product.totalCost) || 0),
+                  0
+                )
+                .toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+              LKR
             </p>
           </div>
         </div>
