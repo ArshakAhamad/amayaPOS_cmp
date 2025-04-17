@@ -1,5 +1,6 @@
 import express from "express";
 import pool from "../config/db.js";
+import bcrypt from "bcrypt";
 
 const router = express.Router();
 
@@ -365,6 +366,32 @@ router.get("/products/suggestions", async (req, res) => {
   } catch (err) {
     console.error("Error fetching product suggestions:", err);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Add this to your backend routes
+router.post("/validate-password", async (req, res) => {
+  const { password } = req.body;
+
+  try {
+    // Get the admin user from database
+    const [users] = await pool.execute(
+      "SELECT * FROM system_user WHERE role = 'Admin' LIMIT 1"
+    );
+
+    if (users.length === 0) {
+      return res
+        .status(404)
+        .json({ valid: false, message: "Admin user not found" });
+    }
+
+    const adminUser = users[0];
+    const isValid = await bcrypt.compare(password, adminUser.password);
+
+    res.json({ valid: isValid });
+  } catch (err) {
+    console.error("Error validating password:", err);
+    res.status(500).json({ valid: false, message: "Server error" });
   }
 });
 

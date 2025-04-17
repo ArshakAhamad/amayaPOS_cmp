@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import Popup from "reactjs-popup";
+import { Icon } from "@iconify/react";
+import eyeOff from "@iconify/icons-mdi/eye-off";
+import eye from "@iconify/icons-mdi/eye";
 
 const ProductReturn = () => {
   const [products, setProducts] = useState([]);
@@ -8,6 +12,10 @@ const ProductReturn = () => {
   const [error, setError] = useState(null);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [selectedProduct, setSelectedProduct] = useState("");
+  const [passwordType, setPasswordType] = useState("password");
+  const [passwordIcon, setPasswordIcon] = useState(eyeOff);
+  const [approvalPassword, setApprovalPassword] = useState("");
+  const [showPasswordPopup, setShowPasswordPopup] = useState(false);
 
   // Fetch products from API on component mount
   useEffect(() => {
@@ -171,12 +179,23 @@ const ProductReturn = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (closePopup) => {
     try {
       const validProducts = products.filter((p) => p.product_id);
 
       if (validProducts.length === 0) {
         alert("No valid products to submit");
+        return;
+      }
+
+      // First validate the password
+      const passwordResponse = await axios.post(
+        "http://localhost:5000/api/validate-password",
+        { password: approvalPassword }
+      );
+
+      if (!passwordResponse.data.valid) {
+        alert("Invalid manager password");
         return;
       }
 
@@ -201,11 +220,19 @@ const ProductReturn = () => {
           "http://localhost:5000/api/product_returns"
         );
         setProducts(returnsRes.data.returns || []);
+        setApprovalPassword("");
+        if (closePopup) closePopup();
       }
     } catch (err) {
       console.error("Error submitting returns:", err);
       alert(`Failed to submit product returns: ${err.message}`);
+      if (closePopup) closePopup();
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setPasswordType(passwordType === "password" ? "text" : "password");
+    setPasswordIcon(passwordIcon === eyeOff ? eye : eyeOff);
   };
 
   if (loading) {
@@ -369,12 +396,78 @@ const ProductReturn = () => {
             Add New Product
           </button>
 
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          <Popup
+            trigger={
+              <button className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Submit Returns
+              </button>
+            }
+            modal
+            onClose={() => {
+              setPasswordType("password");
+              setPasswordIcon(eyeOff);
+              setApprovalPassword("");
+            }}
           >
-            Submit Returns
-          </button>
+            {(close) => (
+              <div className="w-full p-4 bg-gray-900 text-white rounded-lg">
+                <h3 className="text-xl font-bold mb-4">
+                  Confirm Product Returns
+                </h3>
+                <p className="mb-4">
+                  Total Amount:{" "}
+                  {products
+                    .reduce(
+                      (acc, p) => acc + (parseFloat(p.total_cost) || 0),
+                      0
+                    )
+                    .toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "LKR",
+                    })}
+                </p>
+
+                <div className="form-field mb-4">
+                  <label className="block mb-2">Manager Password:</label>
+                  <div className="relative">
+                    <input
+                      type={passwordType}
+                      value={approvalPassword}
+                      onChange={(e) => setApprovalPassword(e.target.value)}
+                      className="w-full p-2 pl-3 pr-10 border rounded bg-gray-800 text-white placeholder-gray-400"
+                      placeholder="Enter password"
+                    />
+                    <span
+                      className="absolute right-3 top-2.5 cursor-pointer"
+                      onClick={togglePasswordVisibility}
+                    >
+                      <Icon icon={passwordIcon} size={20} />
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={close}
+                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleSubmit(close)}
+                    className={`px-4 py-2 rounded text-white transition-colors ${
+                      approvalPassword
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-blue-400 cursor-not-allowed"
+                    }`}
+                    disabled={!approvalPassword}
+                  >
+                    Approve
+                  </button>
+                </div>
+              </div>
+            )}
+          </Popup>
         </div>
 
         {/* 🔷 Total Section */}
