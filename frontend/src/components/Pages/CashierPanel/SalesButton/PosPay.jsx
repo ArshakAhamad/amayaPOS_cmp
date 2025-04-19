@@ -496,11 +496,12 @@ const PosPay = () => {
                       className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                       title="Create New Customer"
                     >
+                      Create Customer
                       <Pencil size={18} className="text-gray-600" />
                     </Link>
                   </div>
                 </div>
-
+                <br></br>
                 {/* Payment Methods */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Cash Payment */}

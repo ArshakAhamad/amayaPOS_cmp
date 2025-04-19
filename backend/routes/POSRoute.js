@@ -9,12 +9,10 @@ router.post("/cart", async (req, res) => {
 
   // Validate required fields
   if (!productId || !quantity || !status) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Product ID, quantity, and status are required.",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Product ID, quantity, and status are required.",
+    });
   }
 
   try {
@@ -26,7 +24,7 @@ router.post("/cart", async (req, res) => {
         price 
       FROM products 
       WHERE id = ?`,
-      [productId],
+      [productId]
     );
 
     if (product.length === 0) {
@@ -46,16 +44,14 @@ router.post("/cart", async (req, res) => {
         quantity, 
         status
       ) VALUES (?, ?, ?, ?, ?)`,
-      [productId, product_name, price, quantity, status],
+      [productId, product_name, price, quantity, status]
     );
 
     if (result.affectedRows > 0) {
-      res
-        .status(201)
-        .json({
-          success: true,
-          message: "Product added to cart successfully.",
-        });
+      res.status(201).json({
+        success: true,
+        message: "Product added to cart successfully.",
+      });
     } else {
       res
         .status(500)
@@ -87,7 +83,7 @@ router.put("/cart/:id", async (req, res) => {
       `UPDATE cart 
         SET quantity = ? 
         WHERE id = ?`,
-      [quantity, id],
+      [quantity, id]
     );
 
     if (result.affectedRows > 0) {
@@ -156,12 +152,10 @@ router.post("/payment", async (req, res) => {
 
   // Validate required fields
   if (!paymentMethod || !totalAmount || !cartItems || cartItems.length === 0) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Payment method, total amount, and cart items are required.",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Payment method, total amount, and cart items are required.",
+    });
   }
 
   let connection;
@@ -195,7 +189,7 @@ router.post("/payment", async (req, res) => {
         card,
         "Admin",
         "Active",
-      ], // Default values for created_by and status
+      ] // Default values for created_by and status
     );
 
     if (paymentResult.affectedRows > 0) {
@@ -211,7 +205,7 @@ router.post("/payment", async (req, res) => {
             price, 
             quantity
           ) VALUES (?, ?, ?, ?, ?)`,
-          [paymentId, item.id, item.name, item.price, item.quantity],
+          [paymentId, item.id, item.name, item.price, item.quantity]
         );
       }
 
@@ -258,12 +252,10 @@ router.post("/returns", async (req, res) => {
 
   // Validate required fields
   if (!returnReason || !cartItems || cartItems.length === 0) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Return reason and cart items are required.",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Return reason and cart items are required.",
+    });
   }
 
   try {
@@ -272,7 +264,7 @@ router.post("/returns", async (req, res) => {
       `INSERT INTO returns (
           return_reason
         ) VALUES (?)`,
-      [returnReason],
+      [returnReason]
     );
 
     if (returnResult.affectedRows > 0) {
@@ -294,7 +286,7 @@ router.post("/returns", async (req, res) => {
             item.product_name,
             item.price,
             item.quantity,
-          ],
+          ]
         );
       }
 
@@ -325,7 +317,7 @@ router.put("/payments/:id/cancel", async (req, res) => {
     // First verify the receipt exists
     const [receipt] = await pool.execute(
       "SELECT id FROM payments WHERE id = ?",
-      [id],
+      [id]
     );
 
     if (receipt.length === 0) {
@@ -338,7 +330,7 @@ router.put("/payments/:id/cancel", async (req, res) => {
     // Update status to Inactive
     const [result] = await pool.execute(
       'UPDATE payments SET status = "Inactive" WHERE id = ?',
-      [id],
+      [id]
     );
 
     if (result.affectedRows === 0) {
@@ -416,7 +408,7 @@ router.post("/pos_expenses", async (req, res) => {
   try {
     const [result] = await pool.query(
       `INSERT INTO pos_expenses (date, expense, amount, created_by) VALUES (?, ?, ?, ?)`,
-      [date, expense, amount, createdBy],
+      [date, expense, amount, createdBy]
     );
 
     if (result.affectedRows > 0) {
