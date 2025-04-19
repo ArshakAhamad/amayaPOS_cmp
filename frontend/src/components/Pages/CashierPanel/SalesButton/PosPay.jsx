@@ -480,7 +480,7 @@ const PosPay = () => {
                     htmlFor="customerPhone"
                     className="block text-left text-sm font-medium text-gray-700 mb-1"
                   >
-                    Customer Phone
+                    Customer Phone :
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -509,7 +509,7 @@ const PosPay = () => {
                       htmlFor="cashPayment"
                       className="block text-left text-sm font-medium text-gray-700 mb-1"
                     >
-                      Cash Amount LKR
+                      Cash Amount LKR :
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-3 text-gray-500"></span>
@@ -532,7 +532,7 @@ const PosPay = () => {
                       htmlFor="cardPayment"
                       className="block text-left text-sm font-medium text-gray-700 mb-1"
                     >
-                      Card Number
+                      Card Number :
                     </label>
                     <div className="relative">
                       <CreditCard
@@ -559,7 +559,7 @@ const PosPay = () => {
                     htmlFor="giftVoucher"
                     className="block text-left text-sm font-medium text-gray-700 mb-1"
                   >
-                    Gift Voucher
+                    Gift Voucher :
                   </label>
                   <input
                     type="text"
@@ -579,7 +579,7 @@ const PosPay = () => {
                 <p className="font-bold text-lg">{balanceMessage}</p>
                 {balance >= 0 && (
                   <p className="text-sm mt-1 text-green-600">
-                    Please give customer LKR {balance.toFixed(2)} as change
+                    Please give customer LKR {balance.toFixed(2)} as change :
                   </p>
                 )}
               </div>
