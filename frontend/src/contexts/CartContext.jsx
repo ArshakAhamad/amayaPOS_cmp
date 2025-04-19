@@ -1,13 +1,10 @@
 import React, { createContext, useState } from "react";
 
-// Create a context for the cart
 export const CartContext = createContext();
 
-// Create a provider component
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
 
-  // Function to add a product to the cart
   const addToCart = (product) => {
     setCart((prevCart) => {
       const isProductInCart = prevCart.some((item) => item.id === product.id);
@@ -20,7 +17,6 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  // Function to update the quantity of a product in the cart
   const updateQuantity = (index, quantity) => {
     setCart((prevCart) =>
       prevCart.map((item, i) =>
@@ -29,13 +25,25 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  // Function to remove a product from the cart
   const removeFromCart = (productId) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
 
+  // Add this new function
+  const clearCart = () => {
+    setCart([]);
+  };
+
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateQuantity, removeFromCart }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        addToCart,
+        updateQuantity,
+        removeFromCart,
+        clearCart, // Make sure to include clearCart here
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

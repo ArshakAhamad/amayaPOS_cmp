@@ -1,22 +1,24 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 
 const POS = () => {
   const [cashInHand, setCashInHand] = useState(0);
-  const navigate = useNavigate(); // 
+  const navigate = useNavigate(); //
 
   const handleStartDay = () => {
-    navigate("/CashierPanel/PosPay"); // 
+    navigate("/CashierPanel/PosPay"); //
   };
 
   return (
     <div className="main-content p-6">
       {/* Page Header */}
-      <h2 className="sales-header text-2xl font-semibold text-center mb-6">POS</h2>
+      <h2 className="sales-header text-2xl font-semibold text-center mb-6">
+        POS
+      </h2>
 
       {/* Date Input & Button */}
       <div className="sales-controls mb-6 flex flex-wrap items-center justify-between">
-      <label className="text-lg font-medium">LKR</label>
+        <label className="text-lg font-medium">LKR</label>
         <input
           type="number"
           className="date-picker p-2 border rounded text-sm w-24"
@@ -35,3 +37,4 @@ const POS = () => {
 };
 
 export default POS;
+5;

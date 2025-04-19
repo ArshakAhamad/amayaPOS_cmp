@@ -4,7 +4,9 @@ import Popup from "reactjs-popup";
 import { motion } from "framer-motion";
 import "reactjs-popup/dist/index.css";
 import Select from "react-select";
+import { Link } from "react-router-dom";
 import { CartContext } from "../../../../contexts/CartContext";
+import { Pencil, CreditCard } from "lucide-react";
 
 const PosPay = () => {
   const { cart, addToCart, updateQuantity, removeFromCart, clearCart } =
@@ -399,34 +401,34 @@ const PosPay = () => {
         contentStyle={{
           maxWidth: "500px",
           width: "90%",
-          padding: "15px",
-          height: "80vh",
-          borderRadius: "12px",
+          padding: "25px",
+          height: "auto",
+          maxHeight: "90vh",
+          borderRadius: "16px",
           background: "white",
-          boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.3)",
+          boxShadow: "0px 10px 25px rgba(0, 0, 0, 0.2)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           textAlign: "center",
         }}
         overlayStyle={{
-          background: "rgba(0, 0, 0, 0.5)",
+          background: "rgba(0, 0, 0, 0.6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          backdropFilter: "blur(3px)",
         }}
       >
         {(close) => {
-          // Calculate balance based ONLY on cash payment
           const totalAmount = parseFloat(calculateTotal());
           const cashAmount = parseFloat(cashPayment) || 0;
-          const balance = cashAmount - totalAmount; // Only use cash payment for balance
+          const balance = cashAmount - totalAmount;
 
-          // Determine balance display
           const balanceClass =
             balance >= 0
-              ? "text-green-600 bg-green-100 border-green-500"
-              : "text-red-600 bg-red-100 border-red-500";
+              ? "text-green-700 bg-green-50 border-green-200"
+              : "text-red-700 bg-red-50 border-red-200";
 
           const balanceMessage =
             balance >= 0
@@ -435,142 +437,165 @@ const PosPay = () => {
 
           return (
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="w-full"
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="w-full space-y-6"
             >
-              <h3 className="text-xl font-semibold mb-4">PAYMENT DETAILS</h3>
-              <span>
-                ----------------------------------------------------------------------------
-              </span>
-              <div className="w-full mb-4 bg-gray-100 p-4 rounded-lg">
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium">Subtotal:</span>
+              {/* Header */}
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-800 mb-1">
+                  Payment Details
+                </h3>
+                <div className="w-20 h-1 bg-blue-500 mx-auto rounded-full"></div>
+              </div>
 
-                  <span>LKR {totalAmount.toFixed(2)}</span>
-                </div>{" "}
-                <br></br>
-                {/*<div className="flex justify-between mb-2">
-            <span className="font-medium">Tax:</span>
-            <span>LKR 0.00</span>
-          </div>*/}
-                <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2">
-                  <span>Total:</span>
-                  <span>LKR {totalAmount.toFixed(2)}</span>
+              {/* Amount Summary */}
+              <div className="w-full bg-gray-50 p-5 rounded-xl border border-gray-200">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="font-medium text-gray-600">Subtotal:</span>
+                  <span className="font-semibold">
+                    LKR {totalAmount.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="border-t border-gray-200 pt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-gray-700">
+                      Total Amount:
+                    </span>
+                    <span className="font-bold text-lg text-blue-600">
+                      LKR {totalAmount.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <span>
-                ----------------------------------------------------------------------------
-              </span>
-              <div className="w-full border-t border-gray-300 my-4"></div>
-
-              <div className="flex flex-col space-y-4 w-full">
-                <div>
+              <br></br>
+              {/* Payment Form */}
+              <div className="w-full space-y-5">
+                {/* Customer Phone */}
+                <div className="relative">
                   <label
                     htmlFor="customerPhone"
-                    className="block text-left mb-1 font-medium"
+                    className="block text-left text-sm font-medium text-gray-700 mb-1"
                   >
-                    Customer Phone:
+                    Customer Phone
                   </label>
-                  <input
-                    type="text"
-                    id="customerPhone"
-                    placeholder="Enter Phone Number"
-                    className="w-full p-3 border border-gray-300 rounded-lg"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                  />
-                </div>{" "}
-                <br></br>
-                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      id="customerPhone"
+                      placeholder="07X XXX XXXX"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                    />
+                    <Link
+                      to="/CashierPanel/NewCustomer"
+                      className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      title="Create New Customer"
+                    >
+                      <Pencil size={18} className="text-gray-600" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Payment Methods */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Cash Payment */}
                   <div>
                     <label
                       htmlFor="cashPayment"
-                      className="block text-left mb-1 font-medium"
+                      className="block text-left text-sm font-medium text-gray-700 mb-1"
                     >
-                      Cash Amount:
+                      Cash Amount LKR
                     </label>
-                    <input
-                      type="number"
-                      id="cashPayment"
-                      placeholder="Enter Cash Amount"
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                      value={cashPayment}
-                      onChange={(e) => setCashPayment(e.target.value)}
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>{" "}
+                    <div className="relative">
+                      <span className="absolute left-3 top-3 text-gray-500"></span>
+                      <input
+                        type="number"
+                        id="cashPayment"
+                        placeholder="0.00"
+                        className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value={cashPayment}
+                        onChange={(e) => setCashPayment(e.target.value)}
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
                   <br></br>
+                  {/* Card Payment */}
                   <div>
                     <label
                       htmlFor="cardPayment"
-                      className="block text-left mb-1 font-medium"
+                      className="block text-left text-sm font-medium text-gray-700 mb-1"
                     >
-                      Card Number:
+                      Card Number
                     </label>
-                    <input
-                      type="text"
-                      id="cardPayment"
-                      placeholder="Enter Card Number"
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                      value={cardPayment}
-                      onChange={(e) => setCardPayment(e.target.value)}
-                      pattern="[0-9]{13,19}"
-                      inputMode="numeric"
-                    />
+                    <div className="relative">
+                      <CreditCard
+                        size={18}
+                        className="absolute left-3 top-3.5 text-gray-500"
+                      />
+                      <input
+                        type="text"
+                        id="cardPayment"
+                        placeholder="XXXX XXXX XXXX XXXX"
+                        className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value={cardPayment}
+                        onChange={(e) => setCardPayment(e.target.value)}
+                        pattern="[0-9]{13,19}"
+                        inputMode="numeric"
+                      />
+                    </div>
                   </div>
-                </div>{" "}
+                </div>
                 <br></br>
+                {/* Gift Voucher */}
                 <div>
                   <label
                     htmlFor="giftVoucher"
-                    className="block text-left mb-1 font-medium"
+                    className="block text-left text-sm font-medium text-gray-700 mb-1"
                   >
-                    Gift Voucher:
+                    Gift Voucher
                   </label>
                   <input
                     type="text"
                     id="giftVoucher"
-                    placeholder="Enter Voucher ID"
-                    className="w-full p-3 border border-gray-300 rounded-lg"
+                    placeholder="Enter voucher code"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={giftVoucher}
                     onChange={(e) => setGiftVoucher(e.target.value)}
                   />
                 </div>
               </div>
 
-              {/* Dynamic Balance Display */}
+              {/* Balance Display */}
               <div
-                className={`w-full mt-4 p-3 rounded-md border ${balanceClass}`}
+                className={`w-full p-4 rounded-lg border ${balanceClass} transition-all duration-200`}
               >
-                <p className="text-lg font-bold">{balanceMessage}</p>
+                <p className="font-bold text-lg">{balanceMessage}</p>
                 {balance >= 0 && (
-                  <p className="text-sm mt-1">
-                    Please give customer {balanceMessage}
+                  <p className="text-sm mt-1 text-green-600">
+                    Please give customer LKR {balance.toFixed(2)} as change
                   </p>
                 )}
               </div>
 
-              <div className="flex justify-end gap-4 mt-6">
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-2">
                 <button
-                  className="px-6 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-colors"
-                  onClick={() => {
-                    close();
-                    setCustomerPhone("");
-                    setCashPayment("");
-                    setCardPayment("");
-                    setGiftVoucher("");
-                  }}
+                  className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                  onClick={close}
                 >
                   Cancel
                 </button>
                 <button
-                  className={`px-6 py-2 text-white rounded-md transition-colors ${
+                  className={`px-6 py-2.5 text-white rounded-lg transition-colors font-medium ${
                     balance >= 0
-                      ? "bg-blue-600 hover:bg-blue-700"
+                      ? "bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg"
                       : "bg-gray-400 cursor-not-allowed"
                   }`}
                   onClick={handlePayment}
