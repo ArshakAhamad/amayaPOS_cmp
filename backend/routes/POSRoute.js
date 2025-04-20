@@ -235,6 +235,37 @@ router.post("/payment", async (req, res) => {
   }
 });
 
+// GET /api/customers - Search customers by phone
+router.get("/customers", async (req, res) => {
+  const { phone } = req.query;
+
+  if (!phone) {
+    return res.status(400).json({
+      success: false,
+      message: "Phone number is required",
+    });
+  }
+
+  try {
+    const [customers] = await pool.execute(
+      "SELECT * FROM customers WHERE customer_phone LIKE ?",
+      [`%${phone}%`]
+    );
+
+    res.status(200).json({
+      success: true,
+      customers,
+    });
+  } catch (error) {
+    console.error("Error fetching customers:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching customers",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
 // GET /api/payments - Fetch all payments
 router.get("/payments", async (req, res) => {
   try {

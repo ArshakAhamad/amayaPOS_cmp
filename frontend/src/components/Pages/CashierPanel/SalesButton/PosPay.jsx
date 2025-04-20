@@ -19,6 +19,7 @@ const PosPay = () => {
   const [cardPayment, setCardPayment] = useState("");
   const [giftVoucher, setGiftVoucher] = useState("");
   const [heldOrders, setHeldOrders] = useState([]);
+  const [customerName, setCustomerName] = useState("");
   const [isHoldOrderPopupOpen, setHoldOrderPopupOpen] = useState(false);
 
   // Fetch products from the backend
@@ -79,6 +80,23 @@ const PosPay = () => {
     }
   };
 
+  const fetchCustomerByPhone = async (phone) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/customers?phone=${phone}`
+      );
+      const data = await response.json();
+      if (data.success && data.customers.length > 0) {
+        setCustomerName(data.customers[0].customer_name);
+      } else {
+        setCustomerName(""); // Clear if no customer found
+      }
+    } catch (err) {
+      console.error("Error fetching customer:", err);
+      setCustomerName("");
+    }
+  };
+
   // Handle payment submission
   const handlePayment = async () => {
     const paymentMethod = cashPayment ? "Cash" : "Card";
@@ -94,7 +112,7 @@ const PosPay = () => {
           paymentMethod,
           totalAmount,
           cartItems: cart,
-          customer: "Walk-In-Customer",
+          customer: customerName || "Walk-In-Customer", // Use fetched name or default
           phone: customerPhone,
           receiptNumber: 2865,
           cash: cashPayment,
@@ -386,12 +404,14 @@ const PosPay = () => {
       </div>
 
       {/* Popup for Payment */}
+      {/* Popup for Payment */}
       <Popup
         open={isPopupOpen}
         closeOnDocumentClick
         onClose={() => {
           setPopupOpen(false);
           setCustomerPhone("");
+          setCustomerName("");
           setCashPayment("");
           setCardPayment("");
           setGiftVoucher("");
@@ -489,7 +509,14 @@ const PosPay = () => {
                       placeholder="07X XXX XXXX"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      onChange={(e) => {
+                        setCustomerPhone(e.target.value);
+                        if (e.target.value.length >= 9) {
+                          fetchCustomerByPhone(e.target.value);
+                        } else {
+                          setCustomerName("");
+                        }
+                      }}
                     />
                     <Link
                       to="/CashierPanel/NewCustomer"
@@ -500,6 +527,14 @@ const PosPay = () => {
                       <Pencil size={18} className="text-gray-600" />
                     </Link>
                   </div>
+                  {customerName && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                      <p className="text-blue-700">
+                        Customer:{" "}
+                        <span className="font-semibold">{customerName}</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <br></br>
                 {/* Payment Methods */}
