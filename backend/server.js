@@ -28,6 +28,7 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import purchaseBillsRoutes from "./routes/purchaseBillsRoute.js";
 import logoutRoutes from "./routes/logoutRoute.js";
 import authRoutes from "./routes/authRoute.js";
+import dailyOpeningRoutes from "./routes/dailyOpening.js";
 
 dotenv.config();
 
@@ -78,7 +79,7 @@ app.use("/api/cashiers", cashRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/purchase-bills", purchaseBillsRoutes);
 app.use("/api/", logoutRoutes);
-
+app.use("/api/daily_openings", dailyOpeningRoutes);
 // Catch unmatched routes
 app.use((req, res) => {
   res.status(404).json({ error: "API route not found" });

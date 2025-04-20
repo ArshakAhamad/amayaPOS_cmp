@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import "reactjs-popup/dist/index.css";
 import Select from "react-select";
 import { Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { CartContext } from "../../../../contexts/CartContext";
 import { Pencil, CreditCard } from "lucide-react";
 
@@ -21,6 +22,16 @@ const PosPay = () => {
   const [heldOrders, setHeldOrders] = useState([]);
   const [customerName, setCustomerName] = useState("");
   const [isHoldOrderPopupOpen, setHoldOrderPopupOpen] = useState(false);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.customerPhone) {
+      setCustomerPhone(location.state.customerPhone);
+      setCustomerName(location.state.customerName);
+      setPopupOpen(true); // Open the payment popup if it's not already open
+    }
+  }, [location.state]);
 
   // Fetch products from the backend
   useEffect(() => {
@@ -404,7 +415,7 @@ const PosPay = () => {
       </div>
 
       {/* Popup for Payment */}
-      {/* Popup for Payment */}
+
       <Popup
         open={isPopupOpen}
         closeOnDocumentClick
@@ -520,6 +531,7 @@ const PosPay = () => {
                     />
                     <Link
                       to="/CashierPanel/NewCustomer"
+                      state={{ fromPayment: true }}
                       className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                       title="Create New Customer"
                     >
