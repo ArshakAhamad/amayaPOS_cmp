@@ -54,19 +54,17 @@ router.post("/suppliers", async (req, res) => {
 
   // Validate required fields
   if (!supplierName || !creditPeriod) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Supplier Name and Credit Period are required.",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Supplier Name and Credit Period are required.",
+    });
   }
 
   try {
     // Insert the supplier details into the database
     const [result] = await pool.execute(
       `INSERT INTO suppliers (supplier_name, outstanding, credit_period, description, created_by, status) VALUES (?, ?, ?, ?, ?, ?)`,
-      [supplierName, 0.0, creditPeriod, description || "", "Admin", "Active"], // Default values for outstanding, created_by, and status
+      [supplierName, 0.0, creditPeriod, description || "", "Admin", "Active"] // Default values for outstanding, created_by, and status
     );
 
     if (result.affectedRows > 0) {
@@ -86,6 +84,67 @@ router.post("/suppliers", async (req, res) => {
   }
 });
 
+// GET /api/suppliers - Include outstanding calculation
+router.get("/", async (req, res) => {
+  try {
+    // Get all suppliers with their outstanding amounts
+    const [suppliers] = await pool.execute(`
+      SELECT s.*, 
+        COALESCE(
+          (SELECT SUM(pi.total_cost) 
+           FROM product_in pi 
+           WHERE pi.supplier_id = s.id 
+           AND pi.is_settled = 0), 0) AS outstanding
+      FROM suppliers s
+    `);
+
+    res.json({ success: true, suppliers });
+  } catch (error) {
+    console.error("Error fetching suppliers:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// POST /api/productin - Update to track supplier purchases
+router.post("/", async (req, res) => {
+  const { products, supplierId } = req.body;
+
+  try {
+    await pool.beginTransaction();
+
+    // Insert each product purchase
+    for (const product of products) {
+      await pool.execute(
+        `INSERT INTO product_in 
+        (date, product_id, product_name, unit_cost, quantity, total_cost, supplier_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          product.date,
+          product.product_id,
+          product.product,
+          product.unitCost,
+          product.quantity,
+          product.totalCost,
+          supplierId,
+        ]
+      );
+
+      // Update product stock
+      await pool.execute(`UPDATE products SET stock = stock + ? WHERE id = ?`, [
+        product.quantity,
+        product.product_id,
+      ]);
+    }
+
+    await pool.commit();
+    res.json({ success: true, message: "Products saved successfully" });
+  } catch (error) {
+    await pool.rollback();
+    console.error("Error saving products:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // POST /api/suppliers/:id/toggle-status - Toggle the status of a supplier
 router.post("/suppliers/:id/toggle-status", async (req, res) => {
   const { id } = req.params;
@@ -94,7 +153,7 @@ router.post("/suppliers/:id/toggle-status", async (req, res) => {
     // Get the current status of the supplier
     const [supplier] = await pool.execute(
       `SELECT status FROM suppliers WHERE id = ?`,
-      [id],
+      [id]
     );
 
     if (supplier.length === 0) {
@@ -112,12 +171,10 @@ router.post("/suppliers/:id/toggle-status", async (req, res) => {
       id,
     ]);
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Supplier status updated successfully.",
-      });
+    res.status(200).json({
+      success: true,
+      message: "Supplier status updated successfully.",
+    });
   } catch (err) {
     console.error("Error toggling supplier status:", err);
     res.status(500).json({ success: false, message: "Server error" });
@@ -185,7 +242,7 @@ router.post("/suppliers/settle", async (req, res) => {
       `INSERT INTO supplier_bill_settlements 
        (supplier_id, bill_no, outstanding_amount, settled_amount, settlement_date, approved_by, approval_method)
        VALUES (?, ?, ?, ?, CURDATE(), 1, 'password')`,
-      [supplierId, billNo, outstandingAmount, outstandingAmount],
+      [supplierId, billNo, outstandingAmount, outstandingAmount]
     );
 
     // 2. Update supplier's outstanding balance
@@ -193,7 +250,7 @@ router.post("/suppliers/settle", async (req, res) => {
       `UPDATE suppliers 
        SET outstanding = outstanding - ?
        WHERE id = ?`,
-      [outstandingAmount, supplierId],
+      [outstandingAmount, supplierId]
     );
 
     // Commit transaction
