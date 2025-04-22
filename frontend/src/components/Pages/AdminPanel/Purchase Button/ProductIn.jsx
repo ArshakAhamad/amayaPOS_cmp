@@ -205,61 +205,56 @@ const ProductIn = () => {
     }
   };
 
-  // Save all products to the backend
   const handleSave = async () => {
     const productsToSave = productDetails.filter(
-      (p) =>
-        p.product_id !== undefined &&
-        p.product_id !== null &&
-        p.product_id !== ""
+      (p) => p.product_id && p.product
     );
 
-    if (productsToSave.length === 0) {
-      alert("Please add at least one product before saving");
+    if (!productsToSave.length) {
+      alert("Please add at least one valid product");
       return;
     }
 
     if (!selectedSupplier) {
-      alert("Please select a supplier before saving");
+      alert("Please select a supplier");
       return;
     }
 
     try {
       setIsLoading(true);
-      setError(null);
+
+      // Prepare payload with proper data types
+      const payload = {
+        products: productsToSave.map((p) => ({
+          date: p.date || new Date().toISOString().split("T")[0],
+          product_id: parseInt(p.product_id),
+          product: p.product.toString(),
+          unitCost: parseFloat(p.unitCost) || 0,
+          quantity: parseInt(p.quantity) || 0,
+          totalCost: parseFloat(p.totalCost) || 0,
+          stock: parseInt(p.stock) || 0,
+        })),
+        supplierId: parseInt(selectedSupplier),
+      };
+
       const response = await fetch("http://localhost:5000/api/productin", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          products: productsToSave.map((p) => ({
-            date: p.date || new Date().toISOString().split("T")[0],
-            product_id: p.product_id,
-            product: p.product.trim(),
-            unitCost: parseFloat(p.unitCost) || 0,
-            quantity: parseInt(p.quantity) || 0,
-            totalCost: parseFloat(p.totalCost) || 0,
-            stock: parseInt(p.stock) || 0,
-          })),
-          supplierId: selectedSupplier,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
+          data.message || `Save failed: ${data.sqlError || "Unknown error"}`
         );
       }
 
-      const data = await response.json();
-      alert("Products saved successfully!");
-      setEditingRows({}); // Exit all edit modes
+      alert(`Saved successfully! Total: ${data.totalAmount.toFixed(2)} LKR`);
       fetchProductDetails();
     } catch (error) {
-      console.error("Error saving products:", error);
-      setError(error.message);
+      console.error("Save error:", error);
       alert(`Error: ${error.message}`);
     } finally {
       setIsLoading(false);
@@ -374,7 +369,7 @@ const ProductIn = () => {
                         styles={{
                           control: (base) => ({
                             ...base,
-                            minHeight: "42px",
+                            minHeight: "45px",
                             borderColor: "#d1d5db",
                             "&:hover": {
                               borderColor: "#d1d5db",

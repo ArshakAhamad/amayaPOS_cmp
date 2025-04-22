@@ -27,51 +27,49 @@ router.get("/suppliers", async (req, res) => {
   }
 });
 
-// Batch insert products with supplier
 router.post("/productin", async (req, res) => {
   const { products, supplierId } = req.body;
 
-  if (!products || !Array.isArray(products)) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid products data",
-    });
-  }
-
-  if (!supplierId) {
-    return res.status(400).json({
-      success: false,
-      message: "Supplier ID is required",
-    });
-  }
-
   try {
-    // First get supplier details
-    const [supplierRows] = await pool.query(
-      "SELECT supplier_name FROM suppliers WHERE id = ?",
+    await pool.query("START TRANSACTION");
+
+    // 1. Verify supplier exists
+    const [supplier] = await pool.query(
+      "SELECT id, supplier_name FROM suppliers WHERE id = ?",
       [supplierId]
     );
 
-    if (supplierRows.length === 0) {
+    if (!supplier.length) {
+      await pool.query("ROLLBACK");
       return res.status(400).json({
         success: false,
-        message: "Invalid supplier ID",
+        message: "Supplier not found",
       });
     }
 
-    const supplierName = supplierRows[0].supplier_name;
+    let totalAmount = 0;
+    const insertedIds = [];
 
-    // Start a transaction
-    await pool.query("START TRANSACTION");
-
-    // Insert each product
     for (const product of products) {
-      if (!product.product) continue;
+      // 2. Verify product exists and has stock column
+      const [productCheck] = await pool.query(
+        "SHOW COLUMNS FROM products LIKE 'stock'"
+      );
 
-      await pool.query(
-        `INSERT INTO productin 
-        (date, product, unitCost, quantity, totalCost, stock, supplier) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      if (!productCheck.length) {
+        await pool.query("ROLLBACK");
+        return res.status(500).json({
+          success: false,
+          message: "Database schema mismatch - missing stock column",
+        });
+      }
+
+      // 3. Insert inventory record
+      const [result] = await pool.query(
+        `INSERT INTO productin (
+          date, product, unitCost, quantity, 
+          totalCost, stock, supplier, supplier_id, product_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           product.date || new Date().toISOString().split("T")[0],
           product.product,
@@ -79,25 +77,47 @@ router.post("/productin", async (req, res) => {
           product.quantity || 0,
           product.totalCost || 0,
           product.stock || 0,
-          supplierName,
+          supplier[0].supplier_name,
+          supplierId,
+          product.product_id,
         ]
       );
+
+      // 4. Update product stock
+      await pool.query(
+        `UPDATE products SET stock = COALESCE(stock, 0) + ? WHERE id = ?`,
+        [product.quantity || 0, product.product_id]
+      );
+
+      totalAmount += parseFloat(product.totalCost) || 0;
+      insertedIds.push(result.insertId);
     }
 
-    // Commit the transaction
+    // 5. Update supplier's outstanding balance
+    await pool.query(
+      `UPDATE suppliers SET outstanding = COALESCE(outstanding, 0) + ? WHERE id = ?`,
+      [totalAmount, supplierId]
+    );
+
     await pool.query("COMMIT");
     res.json({
       success: true,
       message: "Products saved successfully",
+      insertedIds,
+      totalAmount,
     });
   } catch (err) {
-    // Rollback on error
     await pool.query("ROLLBACK");
-    console.error("Error saving products:", err);
+    console.error("Database error:", {
+      message: err.message,
+      sql: err.sql,
+      stack: err.stack,
+    });
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Database operation failed",
       error: err.message,
+      sqlError: err.sqlMessage,
     });
   }
 });
@@ -163,6 +183,28 @@ router.delete("/productin/:id", async (req, res) => {
     // Rollback on error
     await pool.query("ROLLBACK");
     console.error("Error deleting product:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
+  }
+});
+
+// Add this to your productRoute.js
+router.get("/productin/outstanding", async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        supplier_id,
+        SUM(totalCost) as outstanding
+      FROM productin
+      GROUP BY supplier_id
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching outstanding amounts:", err);
     res.status(500).json({
       success: false,
       message: "Server error",

@@ -181,6 +181,74 @@ router.post("/suppliers/:id/toggle-status", async (req, res) => {
   }
 });
 
+// GET /api/suppliers/outstanding - Get outstanding amounts from productin
+// Add this route to your supplierRoute.js
+router.get("/outstanding", async (req, res) => {
+  const { search = "", page = 1, limit = 10 } = req.query;
+  const offset = (page - 1) * limit;
+
+  try {
+    // Base query
+    let query = `
+      SELECT 
+        s.id,
+        s.supplier_name,
+        s.outstanding,
+        s.credit_period,
+        s.status,
+        s.created_at,
+        s.created_by,
+        COUNT(pi.id) as purchase_count,
+        COALESCE(SUM(pi.totalCost), 0) as total_purchases
+      FROM suppliers s
+      LEFT JOIN productin pi ON s.id = pi.supplier_id
+    `;
+
+    let countQuery = `SELECT COUNT(*) as total FROM suppliers s`;
+    let queryParams = [];
+    let countParams = [];
+
+    // Add search filter if provided
+    if (search) {
+      query += ` WHERE s.supplier_name LIKE ?`;
+      countQuery += ` WHERE s.supplier_name LIKE ?`;
+      queryParams.push(`%${search}%`);
+      countParams.push(`%${search}%`);
+    }
+
+    // Complete the queries
+    query += `
+      GROUP BY s.id
+      ORDER BY s.supplier_name
+      LIMIT ? OFFSET ?
+    `;
+    queryParams.push(parseInt(limit), parseInt(offset));
+
+    // Execute both queries in parallel
+    const [suppliers, [totalCount]] = await Promise.all([
+      pool.query(query, queryParams),
+      pool.query(countQuery, countParams),
+    ]);
+
+    res.json({
+      success: true,
+      suppliers: suppliers[0].map((row) => ({
+        ...row,
+        outstanding: parseFloat(row.outstanding) || 0,
+        total_purchases: parseFloat(row.total_purchases) || 0,
+      })),
+      totalCount: totalCount[0].total,
+    });
+  } catch (err) {
+    console.error("Error fetching supplier outstanding:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
+  }
+});
+
 // GET /api/suppliers/bills - Get supplier bills
 router.get("/suppliers/bills", async (req, res) => {
   try {
