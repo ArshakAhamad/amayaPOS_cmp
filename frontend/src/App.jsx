@@ -63,8 +63,8 @@ import "./App.css";
 import PosPay from "./components/Pages/AdminPanel/Sales&ProfitButton/PosPay";
 import CashierPosPay from "./components/Pages/CashierPanel/SalesButton/PosPay";
 import CashierPOSReturn from "./components/Pages/CashierPanel/SalesButton/POSReturn";
+import SupplierBills from "./components/Pages/AdminPanel/SupplierButton/SupplierBills";
 import Logout from "./components/Auth/Logout";
-import SupplierHY from "./components/Pages/AdminPanel/SupplierButton/SupplierBills";
 
 // Import the CartProvider
 import { CartProvider } from "./contexts/CartContext";
@@ -169,7 +169,7 @@ function App() {
             <Route path="ProductReturn" exact element={<ProductReturn />} />
             <Route path="SupplierList" exact element={<SupplierList />} />
             <Route path="CreateSupplier" exact element={<CreateSupplier />} />
-            <Route path="SupplierBills" exact element={<SupplierHY />} />
+            <Route path="SupplierBills" exact element={<SupplierBills />} />
             <Route path="StoreList" exact element={<StoreList />} />
             <Route path="CreateStore" exact element={<CreateStore />} />
             <Route path="StoreType" exact element={<StoreType />} />

@@ -282,7 +282,8 @@ router.get("/suppliers/bills", async (req, res) => {
 });
 
 // POST /api/suppliers/settle - Settle a supplier bill
-router.post("/suppliers/settle", async (req, res) => {
+
+/*router.post("/suppliers/settle", async (req, res) => {
   const { billNo, supplierId, outstandingAmount, approvalPassword } = req.body;
 
   // Input validation
@@ -338,6 +339,135 @@ router.post("/suppliers/settle", async (req, res) => {
       message: "Server error",
       error: err.message,
     });
+  }
+}); */
+
+// Get all bills for a specific supplier
+router.get("/suppliers/:id/bills", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get unsettled purchase bills
+    const [unsettledBills] = await pool.query(
+      `
+      SELECT 
+        p.id,
+        p.date,
+        p.product,
+        p.unitCost,
+        p.quantity,
+        p.totalCost,
+        p.bill_no,
+        s.supplier_name
+      FROM productin p
+      JOIN suppliers s ON p.supplier_id = s.id
+      WHERE p.supplier_id = ? AND p.is_settled = FALSE
+      ORDER BY p.date DESC
+    `,
+      [id]
+    );
+
+    // Get settlement history
+    const [settledBills] = await pool.query(
+      `
+      SELECT 
+        s.id,
+        s.settlement_date,
+        p.product,
+        s.amount,
+        s.bill_no,
+        u.username as settled_by
+      FROM supplier_bill_settlements s
+      JOIN productin p ON s.productin_id = p.id
+      JOIN system_user u ON s.settled_by = u.id
+      WHERE s.supplier_id = ?
+      ORDER BY s.settlement_date DESC
+    `,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      unsettledBills,
+      settledBills,
+      supplier: (
+        await pool.query("SELECT * FROM suppliers WHERE id = ?", [id])
+      )[0][0],
+    });
+  } catch (err) {
+    console.error("Error fetching supplier bills:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Settle a specific bill
+router.post("/suppliers/:id/settle", async (req, res) => {
+  const { id } = req.params;
+  const { billId, approvalPassword } = req.body;
+
+  try {
+    // Verify admin password
+    const [admin] = await pool.query(
+      "SELECT id FROM system_user WHERE role = 'Admin' AND password = ?",
+      [await bcrypt.hash(approvalPassword, 10)]
+    );
+
+    if (!admin.length) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Invalid password" });
+    }
+
+    await pool.query("START TRANSACTION");
+
+    // Get the bill details
+    const [bill] = await pool.query(
+      `
+      SELECT id, totalCost, bill_no 
+      FROM productin 
+      WHERE id = ? AND supplier_id = ? AND is_settled = FALSE
+    `,
+      [billId, id]
+    );
+
+    if (!bill.length) {
+      await pool.query("ROLLBACK");
+      return res
+        .status(404)
+        .json({ success: false, message: "Bill not found" });
+    }
+
+    // Mark as settled
+    await pool.query("UPDATE productin SET is_settled = TRUE WHERE id = ?", [
+      billId,
+    ]);
+
+    // Record settlement
+    await pool.query(
+      `INSERT INTO supplier_bill_settlements 
+       (supplier_id, productin_id, bill_no, amount, settled_by)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        id,
+        billId,
+        bill[0].bill_no || `BILL-${Date.now()}`,
+        bill[0].totalCost,
+        admin[0].id,
+      ]
+    );
+
+    // Update supplier outstanding
+    await pool.query(
+      "UPDATE suppliers SET outstanding = outstanding - ? WHERE id = ?",
+      [bill[0].totalCost, id]
+    );
+
+    await pool.query("COMMIT");
+    res.json({ success: true, message: "Bill settled successfully" });
+  } catch (err) {
+    await pool.query("ROLLBACK");
+    console.error("Error settling bill:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
