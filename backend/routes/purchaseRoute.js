@@ -27,6 +27,7 @@ router.get("/suppliers", async (req, res) => {
   }
 });
 
+// Update your existing POST /productin route
 router.post("/productin", async (req, res) => {
   const { products, supplierId } = req.body;
 
@@ -51,25 +52,15 @@ router.post("/productin", async (req, res) => {
     const insertedIds = [];
 
     for (const product of products) {
-      // 2. Verify product exists and has stock column
-      const [productCheck] = await pool.query(
-        "SHOW COLUMNS FROM products LIKE 'stock'"
-      );
+      // Generate a unique bill number
+      const billNo = `BILL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-      if (!productCheck.length) {
-        await pool.query("ROLLBACK");
-        return res.status(500).json({
-          success: false,
-          message: "Database schema mismatch - missing stock column",
-        });
-      }
-
-      // 3. Insert inventory record
+      // 2. Insert inventory record with bill number
       const [result] = await pool.query(
         `INSERT INTO productin (
           date, product, unitCost, quantity, 
-          totalCost, stock, supplier, supplier_id, product_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          totalCost, stock, supplier, supplier_id, product_id, bill_no
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           product.date || new Date().toISOString().split("T")[0],
           product.product,
@@ -80,7 +71,16 @@ router.post("/productin", async (req, res) => {
           supplier[0].supplier_name,
           supplierId,
           product.product_id,
+          billNo, // Add the bill number
         ]
+      );
+
+      // 3. Create initial record in supplier_bill_settlements (as unsettled)
+      await pool.query(
+        `INSERT INTO supplier_bill_settlements (
+          supplier_id, productin_id, bill_no, amount, settlement_date
+        ) VALUES (?, ?, ?, ?, NULL)`, // NULL settlement_date means unsettled
+        [supplierId, result.insertId, billNo, product.totalCost || 0]
       );
 
       // 4. Update product stock
@@ -108,16 +108,11 @@ router.post("/productin", async (req, res) => {
     });
   } catch (err) {
     await pool.query("ROLLBACK");
-    console.error("Database error:", {
-      message: err.message,
-      sql: err.sql,
-      stack: err.stack,
-    });
+    console.error("Database error:", err);
     res.status(500).json({
       success: false,
       message: "Database operation failed",
       error: err.message,
-      sqlError: err.sqlMessage,
     });
   }
 });

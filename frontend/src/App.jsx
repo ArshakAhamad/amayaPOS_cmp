@@ -169,7 +169,7 @@ function App() {
             <Route path="ProductReturn" exact element={<ProductReturn />} />
             <Route path="SupplierList" exact element={<SupplierList />} />
             <Route path="CreateSupplier" exact element={<CreateSupplier />} />
-            <Route path="SupplierBills" exact element={<SupplierBills />} />
+            <Route path="SupplierBills/:id" element={<SupplierBills />} />
             <Route path="StoreList" exact element={<StoreList />} />
             <Route path="CreateStore" exact element={<CreateStore />} />
             <Route path="StoreType" exact element={<StoreType />} />
