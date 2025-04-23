@@ -149,6 +149,7 @@ router.get("/productin", async (req, res) => {
 });
 
 // Delete a product entry
+// Delete a product entry
 router.delete("/productin/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -156,6 +157,31 @@ router.delete("/productin/:id", async (req, res) => {
     // Start a transaction
     await pool.query("START TRANSACTION");
 
+    // 1. First get the product details including supplier_id and totalCost
+    const [productRows] = await pool.query(
+      "SELECT supplier_id, totalCost FROM productin WHERE id = ?",
+      [id]
+    );
+
+    if (productRows.length === 0) {
+      await pool.query("ROLLBACK");
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    const product = productRows[0];
+    const supplierId = product.supplier_id;
+    const totalCost = product.totalCost || 0;
+
+    // 2. Delete related records in supplier_bill_settlements first
+    await pool.query(
+      "DELETE FROM supplier_bill_settlements WHERE productin_id = ?",
+      [id]
+    );
+
+    // 3. Now delete the product from productin
     const [result] = await pool.query("DELETE FROM productin WHERE id = ?", [
       id,
     ]);
@@ -168,7 +194,15 @@ router.delete("/productin/:id", async (req, res) => {
       });
     }
 
-    // Commit the transaction
+    // 4. Update supplier's outstanding balance
+    await pool.query(
+      `UPDATE suppliers 
+       SET outstanding = GREATEST(COALESCE(outstanding, 0) - ?, 0) 
+       WHERE id = ?`,
+      [totalCost, supplierId]
+    );
+
+    // 5. Commit the transaction
     await pool.query("COMMIT");
     res.json({
       success: true,

@@ -182,7 +182,6 @@ router.post("/suppliers/:id/toggle-status", async (req, res) => {
 });
 
 // GET /api/suppliers/outstanding - Get outstanding amounts from productin
-// Add this route to your supplierRoute.js
 router.get("/outstanding", async (req, res) => {
   const { search = "", page = 1, limit = 10 } = req.query;
   const offset = (page - 1) * limit;
@@ -249,31 +248,138 @@ router.get("/outstanding", async (req, res) => {
   }
 });
 
-// In your backend routes (supplierRoutes.js or similar)
-router.get("/:id/settlements", async (req, res) => {
+// In SupplierRoute.js - settlements endpoint
+router.get("/suppliers/:id/settlements", async (req, res) => {
   try {
-    const settlements = await SupplierBillSettlement.findAll({
-      where: { supplier_id: req.params.id },
-      include: [
-        { model: ProductIn, attributes: ["id"] },
-        { model: User, as: "settler", attributes: ["name"] }, // If you have a User model
-      ],
-      order: [["settlement_date", "DESC"]],
+    const supplierId = req.params.id;
+
+    // 1. First verify supplier exists
+    const [supplier] = await pool.query(
+      "SELECT id, supplier_name FROM suppliers WHERE id = ?",
+      [supplierId]
+    );
+
+    if (!supplier.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Supplier not found",
+      });
+    }
+
+    // 2. Get settlements - modified to handle empty results
+    const [settlements] = await pool.query(
+      `SELECT 
+         sbs.id,
+         sbs.bill_no,
+         sbs.amount,
+         sbs.settlement_date,
+         sbs.settled_by,
+         sbs.productin_id,
+         pi.product AS product_name,
+         pi.date AS purchase_date,
+         pi.quantity,
+         pi.unitCost
+       FROM supplier_bill_settlements sbs
+       LEFT JOIN productin pi ON sbs.productin_id = pi.id
+       WHERE sbs.supplier_id = ?`,
+      [supplierId]
+    );
+
+    // Always return success with empty array if no settlements
+    res.json({
+      success: true,
+      message: settlements.length
+        ? "Settlements found"
+        : "No settlements found for this supplier",
+      supplier: {
+        id: supplier[0].id,
+        name: supplier[0].supplier_name,
+      },
+      settlements: settlements || [],
+      summary: {
+        outstanding: settlements.reduce(
+          (sum, s) => (s.settlement_date ? sum : sum + s.amount),
+          0
+        ),
+        settled: settlements.reduce(
+          (sum, s) => (s.settlement_date ? sum + s.amount : sum),
+          0
+        ),
+        total: settlements.reduce((sum, s) => sum + s.amount, 0),
+      },
     });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Database error",
+      error: error.message,
+    });
+  }
+});
+
+// PUT /api/suppliers/:supplierId/settlements/:billId - Mark bill as settled
+router.put("/suppliers/:supplierId/settlements/:billId", async (req, res) => {
+  const { supplierId, billId } = req.params;
+
+  try {
+    await pool.query("START TRANSACTION");
+
+    // 1. Verify the bill exists and belongs to the supplier
+    const [bill] = await pool.query(
+      `SELECT id, amount FROM supplier_bill_settlements 
+       WHERE id = ? AND supplier_id = ? AND settlement_date IS NULL`,
+      [billId, supplierId]
+    );
+
+    if (!bill.length) {
+      await pool.query("ROLLBACK");
+      return res.status(404).json({
+        success: false,
+        message: "Bill not found or already settled",
+      });
+    }
+
+    const amount = bill[0].amount;
+    const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    // 2. Update the settlement record
+    await pool.query(
+      `UPDATE supplier_bill_settlements 
+       SET settlement_date = ?, settled_by = ?
+       WHERE id = ?`,
+      [currentDate, req.user.id, billId]
+    );
+
+    // 3. Update the productin record
+    await pool.query(
+      `UPDATE productin SET is_settled = 1 
+       WHERE id = (SELECT productin_id FROM supplier_bill_settlements WHERE id = ?)`,
+      [billId]
+    );
+
+    // 4. Update supplier's outstanding balance
+    await pool.query(
+      `UPDATE suppliers 
+       SET outstanding = GREATEST(COALESCE(outstanding, 0) - ?, 0)
+       WHERE id = ?`,
+      [amount, supplierId]
+    );
+
+    await pool.query("COMMIT");
 
     res.json({
       success: true,
-      settlements: settlements.map((s) => ({
-        id: s.id,
-        bill_no: s.bill_no,
-        amount: s.amount,
-        settlement_date: s.settlement_date,
-        settled_by: s.settler ? s.settler.name : null,
-      })),
+      message: "Bill marked as settled successfully",
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    await pool.query("ROLLBACK");
+    console.error("Error settling bill:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to settle bill",
+      error: error.message,
+    });
   }
 });
 
