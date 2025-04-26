@@ -63,9 +63,6 @@ const CreateSupplier = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Header with improved visual hierarchy */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Create New Supplier
-            </h1>
             <p className="text-gray-600">Add a new supplier to your system</p>
           </div>
 

@@ -47,9 +47,6 @@ const NewCustomer = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Header Section */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Create New Customer
-            </h1>
             <p className="text-gray-600">Add a new customer to your system</p>
           </div>
 

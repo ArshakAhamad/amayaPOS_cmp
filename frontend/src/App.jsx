@@ -222,23 +222,37 @@ function App() {
 }
 
 // Admin Layout Component
-const AdminLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => (
-  <div className="flex">
-    <Sidepanel isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-    <div className="main-content flex-1 transition-all duration-300">
-      <Topbar
-        toggleSidebar={toggleSidebar}
-        setUserRole={setUserRole}
-        userRole="Admin"
+const AdminLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => {
+  const [activeTabTitle, setActiveTabTitle] = useState("Dashboard");
+
+  return (
+    <div className="flex">
+      <Sidepanel
         isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+        setActiveTabTitle={setActiveTabTitle}
       />
-      <div className="p-8">
-        <Outlet />
+      <div className="main-content flex-1 transition-all duration-300">
+        <Topbar
+          toggleSidebar={toggleSidebar}
+          setUserRole={setUserRole}
+          userRole="Admin"
+          isSidebarOpen={isSidebarOpen}
+        />
+        <div className="p-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">
+              {activeTabTitle}
+            </h1>
+            <div className="border-b border-gray-200 mt-2"></div>
+          </div>
+          <Outlet />
+        </div>
+        <Footer />
       </div>
-      <Footer />
     </div>
-  </div>
-);
+  );
+};
 
 // Cashier Layout Component
 const CashierLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => (

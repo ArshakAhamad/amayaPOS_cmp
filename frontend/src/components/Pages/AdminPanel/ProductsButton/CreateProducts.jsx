@@ -97,9 +97,6 @@ const CreateProducts = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Product Form Header */}
           <div>
-            <h3 className="text-2xl font-semibold text-gray-700">
-              Create Product
-            </h3>
             <p className="text-sm text-gray-500 mt-1">
               You can create new products from here
             </p>

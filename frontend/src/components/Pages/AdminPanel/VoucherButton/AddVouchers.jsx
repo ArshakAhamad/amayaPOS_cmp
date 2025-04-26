@@ -58,10 +58,6 @@ const AddVouchers = () => {
     <div className="flex min-h-screen bg-gray-100">
       <div className="main-content flex-1 ml-64 transition-all duration-300">
         <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold">Create Voucher</h2>
-          </div>
-
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-xl font-medium mb-4">
               Voucher Setup (Enter Details Below)

@@ -113,11 +113,6 @@ const ProductMovement = () => {
   return (
     <div className="main-content p-6">
       <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
-        {/* Header */}
-        <h2 className="sales-header text-2xl font-semibold text-center mb-6">
-          PRODUCT MOVEMENT
-        </h2>
-
         {/* Date Pickers & Generate Button */}
         <div className="sales-controls flex flex-wrap gap-4 items-center justify-between mb-6">
           <label

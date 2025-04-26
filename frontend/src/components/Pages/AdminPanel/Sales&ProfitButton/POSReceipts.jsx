@@ -308,7 +308,6 @@ const POSReceipts = () => {
     <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
       {/* Title & Search Bar */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">POS Receipts</h2>
         <input
           type="text"
           placeholder="Search by Receipts  🔍"

@@ -135,16 +135,13 @@ const POSExpenses = () => {
       {/* Form Section */}
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-md mx-auto mb-8">
         <form onSubmit={handleSubmit}>
-          <h2 className="text-2xl font-semibold text-center mb-4">
-            Record Expenses
-          </h2>
           <h3 className="text-lg font-medium text-gray-600 text-center mb-2">
             Expenses Setup
           </h3>
           <p className="text-sm text-gray-500 text-center mb-6">
             You can record new expenses from here
           </p>
-
+          <br></br>
           <div className="space-y-4">
             <div>
               <label
@@ -175,7 +172,7 @@ const POSExpenses = () => {
                 value={expense}
                 onChange={(e) => setExpense(e.target.value)}
                 className="mt-1 p-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter expense description"
+                placeholder="About expense"
                 required
               />
             </div>
@@ -192,7 +189,7 @@ const POSExpenses = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="mt-1 p-3 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter amount"
+                placeholder=" 0.00 LKR"
                 min="0"
                 step="0.01"
                 required

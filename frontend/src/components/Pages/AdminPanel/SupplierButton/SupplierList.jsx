@@ -96,7 +96,6 @@ const SupplierList = () => {
     <div className="main-content p-6">
       <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold">Manage Supplier</h2>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span>Rows per page:</span>

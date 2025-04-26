@@ -273,7 +273,7 @@ const ProductReturn = () => {
           <div className="barcode-select-container flex gap-4">
             <input
               type="text"
-              placeholder="Scan Barcode"
+              placeholder="Scan Barcode.."
               className="p-3 border border-gray-300 rounded-lg w-64"
               value={barcodeInput}
               onChange={(e) => setBarcodeInput(e.target.value)}

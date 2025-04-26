@@ -159,8 +159,6 @@ const POSReorders = () => {
       <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
         {/* Title & Export Dropdown */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold">Reorders</h2>
-
           <div className="relative">
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden group-hover:block">
               {["CSV", "SQL", "TXT", "JSON"].map((type) => (

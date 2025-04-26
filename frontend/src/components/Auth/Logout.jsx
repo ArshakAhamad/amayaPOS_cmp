@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Logout = () => {
-  const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
+  const [showConfirm, setShowConfirm] = useState(true); // Set to true by default
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -12,51 +12,61 @@ const Logout = () => {
 
   return (
     <div className="logout-wrapper">
-      <div className="logout-confirm">
-        <p>Are you sure you want to logout?</p>
-        <div className="logout-actions">
-          <button className="cancel-btn" onClick={() => setShowConfirm(false)}>
-            Cancel
-          </button>
-          <button className="confirm-btn" onClick={handleLogout}>
-            Yes, Logout
-          </button>
+      {/* Confirmation dialog shows immediately */}
+      {showConfirm && (
+        <div className="logout-confirm">
+          <p>Are you sure you want to logout?</p>
+          <div className="logout-actions">
+            <button
+              className="cancel-btn"
+              onClick={() => {
+                setShowConfirm(false);
+                navigate(-1); // Go back to previous page
+              }}
+            >
+              Cancel
+            </button>
+            <button className="confirm-btn" onClick={handleLogout}>
+              Yes, Logout
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <style jsx>{`
-        .logout-btn {
-          background: rgb(54, 143, 244);
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-weight: 500;
+        .logout-wrapper {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
         }
 
         .logout-confirm {
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
           background: white;
-          padding: 20px;
+          padding: 24px;
           border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-          z-index: 1000;
+
+          width: 320px;
+          max-width: 90%;
         }
 
         .logout-actions {
           display: flex;
           justify-content: flex-end;
-          gap: 10px;
-          margin-top: 20px;
+          gap: 12px;
+          margin-top: 24px;
         }
 
         .cancel-btn {
           padding: 8px 16px;
-          background: rgb(12, 49, 255);
+          background: rgb(231, 231, 231);
+          color: #333;
           border: none;
           border-radius: 4px;
           cursor: pointer;
@@ -64,7 +74,7 @@ const Logout = () => {
 
         .confirm-btn {
           padding: 8px 16px;
-          background: rgb(55, 102, 245);
+          background: rgb(0, 17, 255);
           color: white;
           border: none;
           border-radius: 4px;

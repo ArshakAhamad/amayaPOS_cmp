@@ -255,7 +255,7 @@ const NewSalesRep = () => {
               type="submit"
               className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
             >
-              New
+              Clear Form
             </button>{" "}
             <button
               type="submit"

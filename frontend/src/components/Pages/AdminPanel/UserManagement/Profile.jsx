@@ -96,7 +96,6 @@ const Profile = () => {
     <div className="main-content p-6 flex justify-center items-center min-h-screen">
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-md">
         <form onSubmit={handleSubmit}>
-          <h2 className="text-2xl font-semibold text-center mb-4">Profile</h2>
           <h3 className="text-lg font-medium text-gray-600 text-center mb-2">
             Authentication Settings
           </h3>

@@ -242,7 +242,17 @@ const VoucherList = () => {
         <div className="p-6">
           {/* Title & Search */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold">Manage Vouchers</h2>
+            <span>Rows per page: </span>
+            <select
+              className="p-2 border rounded-lg"
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              title="Select number of rows to display per page"
+            >
+              <option value="25">25</option>
+              <option value="75">75</option>
+              <option value="100">100</option>
+            </select>{" "}
             <input
               type="text"
               placeholder="Search vouchers 🔍"
@@ -277,23 +287,13 @@ const VoucherList = () => {
               </button>
             ))}
           </div>
-
+          <br></br>
           {/* Voucher Details */}
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl">Voucher Details</h3>
             <div className="flex gap-4 items-center">
               <div className="relative group">
-                <span>Rows per page: </span>
-                <select
-                  className="p-2 border rounded-lg"
-                  value={rowsPerPage}
-                  onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                  title="Select number of rows to display per page"
-                >
-                  <option value="25">25</option>
-                  <option value="75">75</option>
-                  <option value="100">100</option>
-                </select>
+                {" "}
+                <h2 className="text-2xl font-semibold">Manage Vouchers</h2>
               </div>
             </div>
           </div>

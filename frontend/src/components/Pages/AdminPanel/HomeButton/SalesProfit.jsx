@@ -94,11 +94,6 @@ const SalesProfit = () => {
 
   return (
     <div className="main-content p-6 flex flex-col items-center">
-      {/* Header */}
-      <h2 className="sales-header text-2xl font-semibold text-center mb-6">
-        SALES
-      </h2>
-
       {/* Date Pickers & Generate Button - Fixed Alignment */}
       <div className="sales-controls flex flex-wrap gap-4 items-center justify-center mb-6 w-full max-w-5xl bg-white p-4 rounded-lg shadow-md mt-4">
         <label

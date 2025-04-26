@@ -63,10 +63,16 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
           <input
             type="text"
             id="username"
-            placeholder="Enter username"
+            placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
+            style={{
+              padding: "12px",
+              fontSize: "16px",
+              backgroundColor: "#fff",
+              color: "#333",
+            }}
           />
         </div>
 
@@ -76,10 +82,16 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
             <input
               type={passwordType}
               id="password"
-              placeholder="Enter password"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              style={{
+                padding: "12px",
+                fontSize: "16px",
+                backgroundColor: "#fff",
+                color: "#333",
+              }}
             />
             <span
               className="password-toggle-icon"
@@ -97,7 +109,21 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
         </p>
 
         <div className="form-buttons">
-          <button type="submit">Log In</button>
+          <button
+            type="submit"
+            style={{
+              padding: "12px 24px",
+              fontSize: "16px",
+              backgroundColor: "#2563eb",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              width: "100%",
+            }}
+          >
+            Log In
+          </button>
         </div>
       </form>
     </div>

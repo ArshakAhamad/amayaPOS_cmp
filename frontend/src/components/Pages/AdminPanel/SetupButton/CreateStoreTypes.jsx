@@ -47,9 +47,6 @@ const CreateStoreTypes = () => {
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-3xl">
         {/* 🔷 Centered Header */}
         <div className="text-center mb-6">
-          <h3 className="text-2xl font-semibold text-gray-700">
-            Create Store Type
-          </h3>
           <p className="text-sm text-gray-500 mt-1">
             You can create new store types from here
           </p>
