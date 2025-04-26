@@ -66,23 +66,40 @@ const SupplierBills = () => {
   const handleBack = () => navigate("/AdminPanel/SupplierList");
 
   const handleSettleBill = async (billId) => {
-    if (window.confirm("Are you sure you want to mark this bill as settled?")) {
-      try {
-        const response = await axios.put(
-          `/api/suppliers/${id}/settlements/${billId}`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+    try {
+      const token = localStorage.getItem("token");
+      console.log("Current token:", token); // Debug log
 
-        if (response.data.success) {
-          toast.success("Bill settled successfully");
-          fetchSettlements(); // Refresh data
+      if (!token) {
+        toast.error("Please login again");
+        navigate("/login");
+        return;
+      }
+
+      // Make the request WITHOUT client-side verification
+      const response = await axios.put(
+        `http://localhost:5000/api/suppliers/${id}/settlements/${billId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      } catch (error) {
+      );
+
+      if (response.data.success) {
+        toast.success("Bill settled successfully!");
+        fetchSettlements();
+      }
+    } catch (error) {
+      console.error("Full error:", error);
+
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        toast.error("Session expired - please login again");
+        navigate("/login");
+      } else {
         toast.error(error.response?.data?.message || "Failed to settle bill");
       }
     }

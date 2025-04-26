@@ -1,7 +1,64 @@
 import express from "express";
 import pool from "../config/db.js"; // Import your MySQL connection pool
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 
 const router = express.Router();
+dotenv.config();
+
+// Middleware to verify JWT token
+const verifyToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization header with Bearer token required",
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Verify user exists in database
+    const [user] = await pool.query(
+      "SELECT id, username FROM system_user WHERE id = ?",
+      [decoded.id]
+    );
+
+    if (!user.length || !user[0].is_active) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found or inactive",
+      });
+    }
+
+    req.user = user[0]; // Attach user to request
+    next();
+  } catch (error) {
+    console.error("Token verification error:", error.message);
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token expired",
+      });
+    }
+
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Authentication failed",
+    });
+  }
+};
 
 // GET /api/suppliers - Fetch all suppliers with pagination and search
 router.get("/suppliers", async (req, res) => {
@@ -318,69 +375,118 @@ router.get("/suppliers/:id/settlements", async (req, res) => {
   }
 });
 
-// PUT /api/suppliers/:supplierId/settlements/:billId - Mark bill as settled
-router.put("/suppliers/:supplierId/settlements/:billId", async (req, res) => {
-  const { supplierId, billId } = req.params;
+router.put(
+  "/suppliers/:supplierId/settlements/:billId",
+  verifyToken,
+  async (req, res) => {
+    const { supplierId, billId } = req.params;
+    const { id: userId, username } = req.user;
 
-  try {
-    await pool.query("START TRANSACTION");
+    try {
+      await pool.query("START TRANSACTION");
 
-    // 1. Verify the bill exists and belongs to the supplier
-    const [bill] = await pool.query(
-      `SELECT id, amount FROM supplier_bill_settlements 
-       WHERE id = ? AND supplier_id = ? AND settlement_date IS NULL`,
-      [billId, supplierId]
-    );
+      // 1. Verify the bill exists and is unsettled
+      const [bill] = await pool.query(
+        `SELECT 
+        sbs.id, 
+        sbs.amount, 
+        sbs.productin_id,
+        s.supplier_name,
+        s.id as supplier_id
+       FROM supplier_bill_settlements sbs
+       JOIN suppliers s ON sbs.supplier_id = s.id
+       WHERE sbs.id = ? 
+         AND sbs.supplier_id = ? 
+         AND sbs.settlement_date IS NULL
+       FOR UPDATE`,
+        [billId, supplierId]
+      );
 
-    if (!bill.length) {
+      if (!bill.length) {
+        await pool.query("ROLLBACK");
+        return res.status(404).json({
+          success: false,
+          message: "Bill not found, already settled, or invalid supplier",
+        });
+      }
+
+      const amount = parseFloat(bill[0].amount);
+      const currentDate = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
+      const settledBy = username || `User ${userId}`;
+
+      // 2. Update settlement record
+      await pool.query(
+        `UPDATE supplier_bill_settlements 
+       SET settlement_date = ?, 
+           settled_by = ?,
+           updated_at = NOW()
+       WHERE id = ?`,
+        [currentDate, settledBy, billId]
+      );
+
+      // 3. Update productin record if exists
+      if (bill[0].productin_id) {
+        await pool.query(
+          `UPDATE productin 
+         SET is_settled = 1,
+             settled_at = NOW()
+         WHERE id = ?`,
+          [bill[0].productin_id]
+        );
+      }
+
+      // 4. Update supplier's outstanding balance
+      await pool.query(
+        `UPDATE suppliers 
+       SET outstanding = GREATEST(0, ROUND(COALESCE(outstanding, 0) - ?, 2)),
+           updated_at = NOW()
+       WHERE id = ?`,
+        [amount, supplierId]
+      );
+
+      // 5. Log the settlement
+      await pool.query(
+        `INSERT INTO settlement_logs 
+       (bill_id, supplier_id, amount, settled_by, settlement_date)
+       VALUES (?, ?, ?, ?, ?)`,
+        [billId, supplierId, amount, settledBy, currentDate]
+      );
+
+      await pool.query("COMMIT");
+
+      // 6. Get updated data for response
+      const [updatedSupplier] = await pool.query(
+        `SELECT supplier_name, outstanding FROM suppliers WHERE id = ?`,
+        [supplierId]
+      );
+
+      res.json({
+        success: true,
+        message: `Bill ${billId} settled successfully`,
+        data: {
+          billId,
+          supplier: updatedSupplier[0],
+          amountSettled: amount,
+          settlementDate: currentDate,
+          settledBy,
+          newOutstanding: updatedSupplier[0].outstanding,
+        },
+      });
+    } catch (error) {
       await pool.query("ROLLBACK");
-      return res.status(404).json({
+      console.error("Settlement processing error:", error);
+
+      res.status(500).json({
         success: false,
-        message: "Bill not found or already settled",
+        message: "Failed to process settlement",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
-
-    const amount = bill[0].amount;
-    const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
-
-    // 2. Update the settlement record
-    await pool.query(
-      `UPDATE supplier_bill_settlements 
-       SET settlement_date = ?, settled_by = ?
-       WHERE id = ?`,
-      [currentDate, req.user.id, billId]
-    );
-
-    // 3. Update the productin record
-    await pool.query(
-      `UPDATE productin SET is_settled = 1 
-       WHERE id = (SELECT productin_id FROM supplier_bill_settlements WHERE id = ?)`,
-      [billId]
-    );
-
-    // 4. Update supplier's outstanding balance
-    await pool.query(
-      `UPDATE suppliers 
-       SET outstanding = GREATEST(COALESCE(outstanding, 0) - ?, 0)
-       WHERE id = ?`,
-      [amount, supplierId]
-    );
-
-    await pool.query("COMMIT");
-
-    res.json({
-      success: true,
-      message: "Bill marked as settled successfully",
-    });
-  } catch (error) {
-    await pool.query("ROLLBACK");
-    console.error("Error settling bill:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to settle bill",
-      error: error.message,
-    });
   }
-});
+);
 
 export default router;

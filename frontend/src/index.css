@@ -768,8 +768,8 @@ button:hover {
 
 .generate-btn {
   margin-bottom: -10px;
-  height: 40px;
-  width: 120px;
+  height: auto;
+  width: auto;
   background-color: #1e3a8a;
   color: white;
   border: none;

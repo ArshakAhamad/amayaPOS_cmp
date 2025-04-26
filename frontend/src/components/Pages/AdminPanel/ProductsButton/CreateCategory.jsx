@@ -31,7 +31,10 @@ const CreateCategory = () => {
       };
 
       // Send the category details to the backend API
-      const response = await axios.post("http://localhost:5000/api/categories", payload);
+      const response = await axios.post(
+        "http://localhost:5000/api/categories",
+        payload
+      );
 
       // Handle the response
       if (response.data.success) {
@@ -57,14 +60,19 @@ const CreateCategory = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 🔷 Centered Header */}
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold text-gray-700">Create Category</h2>
-            <p className="text-sm text-gray-500 mt-1">You can create new categories from here</p>
+            <h2 className="text-2xl font-semibold text-gray-700">
+              Create Category
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              You can create new categories from here
+            </p>
           </div>
 
           {/* 🔷 Category Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Category Name <span className="text-red-500">*</span> (Minimum 3 Characters)
+              Category Name <span className="text-red-500">*</span> (Minimum 3
+              Characters)
             </label>
             <input
               type="text"
@@ -72,20 +80,22 @@ const CreateCategory = () => {
               value={categoryDetails.categoryName}
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-lg"
-              placeholder="Enter Category Name"
+              placeholder=" Category Name"
               required
             />
           </div>
 
           {/* 🔷 Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Description
+            </label>
             <textarea
               name="description"
               value={categoryDetails.description}
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-lg"
-              placeholder="Enter Description"
+              placeholder="About this category"
             />
           </div>
 

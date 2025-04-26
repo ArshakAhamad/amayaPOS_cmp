@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios"; // Import axios to send requests
+import axios from "axios";
 
 const NewCustomer = () => {
   const [customerDetails, setCustomerDetails] = useState({
@@ -7,8 +7,8 @@ const NewCustomer = () => {
     phone: "",
     address: "",
   });
-  const [message, setMessage] = useState(""); // State to store messages (success or error)
-  const [messageType, setMessageType] = useState(""); // State to store message type ("success" or "error")
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,98 +21,115 @@ const NewCustomer = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/customers', customerDetails);
+      const response = await axios.post(
+        "http://localhost:5000/api/customers",
+        customerDetails
+      );
 
       if (response.data.success) {
-        setMessage(response.data.message); // Set success message
-        setMessageType("success"); // Set message type to success
-        setCustomerDetails({ customerName: "", phone: "", address: "" }); // Clear form fields
+        setMessage(response.data.message);
+        setMessageType("success");
+        setCustomerDetails({ customerName: "", phone: "", address: "" });
       } else {
-        setMessage(response.data.message); // Set error message
-        setMessageType("error"); // Set message type to error
+        setMessage(response.data.message);
+        setMessageType("error");
       }
     } catch (err) {
       setMessage("An error occurred while creating the customer.");
       setMessageType("error");
-      console.error('Error creating customer:', err);
+      console.error("Error creating customer:", err);
     }
   };
 
   return (
     <div className="main-content p-6 flex justify-center items-center min-h-screen">
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-3xl">
-
-        {/* 🔷 Customer Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 🔷 Centered Heading */}
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-semibold text-gray-700">Create Customer</h3>
-            <p className="text-sm text-gray-500 mt-1">You can create New Customers from here</p>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Header Section */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              Create New Customer
+            </h1>
+            <p className="text-gray-600">Add a new customer to your system</p>
           </div>
 
-          {/* Message */}
+          {/* Message Display */}
           {message && (
             <div
-              className={`p-4 rounded-lg mb-4 ${
-                messageType === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              className={`p-4 rounded-lg ${
+                messageType === "success"
+                  ? "bg-green-50 text-green-800 border border-green-200"
+                  : "bg-red-50 text-red-800 border border-red-200"
               }`}
             >
               {message}
             </div>
           )}
 
-          {/* Customer Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Customer Name</label>
-            <input
-              type="text"
-              name="customerName"
-              value={customerDetails.customerName}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              placeholder="Enter Customer Name"
-              required
-            />
+          {/* Form Fields */}
+          <div className="space-y-6">
+            {/* Customer Name */}
+            <div>
+              <label className="block text-base font-medium text-gray-700 mb-2">
+                Customer Name
+              </label>
+              <input
+                type="text"
+                name="customerName"
+                value={customerDetails.customerName}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Customer name"
+                required
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label className="block text-base font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <input
+                type="text"
+                name="phone"
+                value={customerDetails.phone}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Phone number"
+                required
+              />
+            </div>
+
+            {/* Address */}
+            <div>
+              <label className="block text-base font-medium text-gray-700 mb-2">
+                Address
+              </label>
+              <textarea
+                name="address"
+                value={customerDetails.address}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Customer address (optional)"
+                rows="3"
+              />
+            </div>
           </div>
 
-          {/* Phone */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
-            <input
-              type="text"
-              name="phone"
-              value={customerDetails.phone}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              placeholder="Enter Phone Number"
-              required
-            />
-          </div>
-
-          {/* Address */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Address</label>
-            <textarea
-              name="address"
-              value={customerDetails.address}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              placeholder="Enter Address"
-              required
-            />
-          </div>
-
-          {/* Buttons */}
-          <div className="flex justify-between mt-6">
+          {/* Action Buttons */}
+          <div className="flex justify-between mt-8 gap-6">
             <button
               type="button"
-              className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              title="Clear the form and start a new customer entry"
             >
-              New
+              Clear
             </button>
+
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 focus:ring-4 focus:ring-blue-300"
+              className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              title="Save the current customer details"
             >
               Save
             </button>

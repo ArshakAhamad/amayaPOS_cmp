@@ -9,9 +9,9 @@ const ProfitLossReport = () => {
       voucherSales: 0,
       costDiscounts: 0,
       expenses: 0,
-      profitLoss: 0
+      profitLoss: 0,
     },
-    receipts: []
+    receipts: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -39,7 +39,7 @@ const ProfitLossReport = () => {
       }
 
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || "Request failed");
       }
@@ -50,11 +50,10 @@ const ProfitLossReport = () => {
           voucherSales: Number(data.voucherSales) || 0,
           costDiscounts: Number(data.costDiscounts) || 0,
           expenses: Number(data.expenses) || 0,
-          profitLoss: Number(data.profitLoss) || 0
+          profitLoss: Number(data.profitLoss) || 0,
         },
-        receipts: data.receipts || []
+        receipts: data.receipts || [],
       });
-
     } catch (err) {
       console.error("Error:", err);
       setError(err.message);
@@ -64,51 +63,72 @@ const ProfitLossReport = () => {
           voucherSales: 0,
           costDiscounts: 0,
           expenses: 0,
-          profitLoss: 0
+          profitLoss: 0,
         },
-        receipts: []
+        receipts: [],
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const profitPercentage = reportData.summary.productSales > 0 
-    ? ((reportData.summary.profitLoss / reportData.summary.productSales) * 100).toFixed(2)
-    : "0.00";
+  const profitPercentage =
+    reportData.summary.productSales > 0
+      ? (
+          (reportData.summary.profitLoss / reportData.summary.productSales) *
+          100
+        ).toFixed(2)
+      : "0.00";
 
   return (
     <div className="main-content p-6">
-      <h2 className="sales-header text-2xl font-semibold text-center mb-6">SALES</h2>
+      <h2 className="sales-header text-2xl font-semibold text-center mb-6">
+        SALES
+      </h2>
 
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
           {error}
-          <button onClick={() => setError(null)} className="float-right">×</button>
+          <button onClick={() => setError(null)} className="float-right">
+            ×
+          </button>
         </div>
       )}
 
       <div className="sales-controls flex flex-wrap gap-4 items-center justify-center mb-6 w-full max-w-5xl bg-white p-4 rounded-lg shadow-md mt-4">
-        <input 
+        <label
+          htmlFor="startDate"
+          className="text-sm font-medium text-gray-700 mb-1"
+        >
+          Start Date
+        </label>
+        <input
           type="date"
           className="date-picker p-3 border border-gray-300 rounded-lg text-sm w-48 sm:w-56 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           max={endDate}
         />
-        <input 
+        <bt></bt>
+        <label
+          htmlFor="endDate"
+          className="text-sm font-medium text-gray-700 mb-1"
+        >
+          End Date
+        </label>
+        <input
           type="date"
           className="date-picker p-3 border border-gray-300 rounded-lg text-sm w-48 sm:w-56 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           min={startDate}
         />
-        <button 
+        <button
           className="generate-btn p-3 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 disabled:bg-blue-300"
           onClick={handleGenerate}
           disabled={loading}
         >
-          {loading ? 'Loading...' : 'Generate'}
+          {loading ? "Loading..." : "Generate Report"}
         </button>
       </div>
 
@@ -139,7 +159,13 @@ const ProfitLossReport = () => {
           <span className="icon">⚡</span>
           <div>
             <p>Profit [{profitPercentage}%]</p>
-            <h3 className={`profit-amount ${reportData.summary.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <h3
+              className={`profit-amount ${
+                reportData.summary.profitLoss >= 0
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
               {formatNumber(reportData.summary.profitLoss)}
             </h3>
           </div>
@@ -155,19 +181,33 @@ const ProfitLossReport = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt No</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  #
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Receipt No
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Items
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created By
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {reportData.receipts.length > 0 ? (
                 reportData.receipts.map((receipt, index) => (
                   <tr key={receipt.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {index + 1}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {receipt.receipt_number}
                     </td>
@@ -181,14 +221,19 @@ const ProfitLossReport = () => {
                       {receipt.items}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {receipt.created_by || 'System'}
+                      {receipt.created_by || "System"}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
-                    {loading ? 'Loading receipts...' : 'No receipts found for selected period'}
+                  <td
+                    colSpan="6"
+                    className="px-6 py-4 text-center text-sm text-gray-500"
+                  >
+                    {loading
+                      ? "Loading receipts..."
+                      : "No receipts found for selected period"}
                   </td>
                 </tr>
               )}

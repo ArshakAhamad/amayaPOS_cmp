@@ -15,7 +15,7 @@ const StoreList = () => {
     name: "",
     type: "",
     description: "",
-    status: "Active"
+    status: "Active",
   });
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -49,7 +49,7 @@ const StoreList = () => {
       name: store.name,
       type: store.type,
       description: store.description || "",
-      status: store.status || "Active"
+      status: store.status || "Active",
     });
     setIsEditModalOpen(true);
   };
@@ -59,7 +59,7 @@ const StoreList = () => {
     const { name, value } = e.target;
     setEditFormData({
       ...editFormData,
-      [name]: value
+      [name]: value,
     });
   };
 
@@ -71,7 +71,7 @@ const StoreList = () => {
         storeName: editFormData.name,
         storeType: editFormData.type,
         description: editFormData.description,
-        status: editFormData.status
+        status: editFormData.status,
       };
 
       const response = await axios.put(
@@ -80,24 +80,29 @@ const StoreList = () => {
       );
 
       if (response.data.success) {
-        setStores(stores.map(store => 
-          store.id === currentStore.id ? 
-          { 
-            ...store, 
-            name: editFormData.name,
-            type: editFormData.type,
-            description: editFormData.description,
-            status: editFormData.status
-          } : store
-        ));
+        setStores(
+          stores.map((store) =>
+            store.id === currentStore.id
+              ? {
+                  ...store,
+                  name: editFormData.name,
+                  type: editFormData.type,
+                  description: editFormData.description,
+                  status: editFormData.status,
+                }
+              : store
+          )
+        );
         setIsEditModalOpen(false);
-        setSuccessMessage('Store updated successfully');
-        setTimeout(() => setSuccessMessage(''), 3000);
+        setSuccessMessage("Store updated successfully");
+        setTimeout(() => setSuccessMessage(""), 3000);
       } else {
-        setError(response.data.message || 'Failed to update store');
+        setError(response.data.message || "Failed to update store");
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'An error occurred while updating store.');
+      setError(
+        err.response?.data?.message || "An error occurred while updating store."
+      );
     }
   };
 
@@ -112,7 +117,10 @@ const StoreList = () => {
   // Pagination Logic
   const indexOfLastStore = currentPage * itemsPerPage;
   const indexOfFirstStore = indexOfLastStore - itemsPerPage;
-  const currentStores = filteredStores.slice(indexOfFirstStore, indexOfLastStore);
+  const currentStores = filteredStores.slice(
+    indexOfFirstStore,
+    indexOfLastStore
+  );
   const totalPages = Math.ceil(filteredStores.length / itemsPerPage);
 
   // Handle export functionality
@@ -122,70 +130,90 @@ const StoreList = () => {
       return;
     }
 
-    let content = '';
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    let content = "";
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filename = `stores-${timestamp}.${type.toLowerCase()}`;
 
     switch (type) {
-      case 'CSV':
+      case "CSV":
         content = convertToCSV(filteredStores);
         break;
-      case 'SQL':
+      case "SQL":
         content = convertToSQL(filteredStores);
         break;
-      case 'TXT':
+      case "TXT":
         content = convertToTXT(filteredStores);
         break;
-      case 'JSON':
+      case "JSON":
         content = JSON.stringify(filteredStores, null, 2);
         break;
       default:
         return;
     }
 
-    downloadFile(content, filename, type === 'JSON' ? 'application/json' : 'text/plain');
+    downloadFile(
+      content,
+      filename,
+      type === "JSON" ? "application/json" : "text/plain"
+    );
   };
 
   // Export helper functions
   const convertToCSV = (data) => {
-    if (data.length === 0) return '';
-    const headers = Object.keys(data[0]).join(',');
-    const rows = data.map(obj => 
-      Object.values(obj).map(value => {
-        if (value === null || value === undefined) return '';
-        return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
-      }).join(',')
+    if (data.length === 0) return "";
+    const headers = Object.keys(data[0]).join(",");
+    const rows = data.map((obj) =>
+      Object.values(obj)
+        .map((value) => {
+          if (value === null || value === undefined) return "";
+          return typeof value === "string"
+            ? `"${value.replace(/"/g, '""')}"`
+            : value;
+        })
+        .join(",")
     );
-    return [headers, ...rows].join('\n');
+    return [headers, ...rows].join("\n");
   };
 
   const convertToSQL = (data) => {
-    if (data.length === 0) return '';
-    const tableName = 'stores';
-    const columns = Object.keys(data[0]).join(', ');
-    const values = data.map(obj => 
-      `(${Object.values(obj).map(value => {
-        if (value === null || value === undefined) return 'NULL';
-        return typeof value === 'string' ? `'${value.replace(/'/g, "''")}'` : value;
-      }).join(', ')})`
-    ).join(',\n');
-    
+    if (data.length === 0) return "";
+    const tableName = "stores";
+    const columns = Object.keys(data[0]).join(", ");
+    const values = data
+      .map(
+        (obj) =>
+          `(${Object.values(obj)
+            .map((value) => {
+              if (value === null || value === undefined) return "NULL";
+              return typeof value === "string"
+                ? `'${value.replace(/'/g, "''")}'`
+                : value;
+            })
+            .join(", ")})`
+      )
+      .join(",\n");
+
     return `INSERT INTO ${tableName} (${columns}) VALUES\n${values};`;
   };
 
   const convertToTXT = (data) => {
-    return data.map(obj => 
-      Object.entries(obj).map(([key, value]) => {
-        const val = value === null || value === undefined ? 'N/A' : value.toString();
-        return `${key}: ${val}`;
-      }).join('\n')
-    ).join('\n\n');
+    return data
+      .map((obj) =>
+        Object.entries(obj)
+          .map(([key, value]) => {
+            const val =
+              value === null || value === undefined ? "N/A" : value.toString();
+            return `${key}: ${val}`;
+          })
+          .join("\n")
+      )
+      .join("\n\n");
   };
 
   const downloadFile = (content, filename, mimeType) => {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = filename;
     document.body.appendChild(a);
@@ -210,7 +238,7 @@ const StoreList = () => {
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
               <div className="flex justify-between items-center border-b p-4">
                 <h3 className="text-lg font-semibold">Edit Store</h3>
-                <button 
+                <button
                   onClick={() => setIsEditModalOpen(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -232,7 +260,7 @@ const StoreList = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Store Type
@@ -246,7 +274,7 @@ const StoreList = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description
@@ -259,7 +287,7 @@ const StoreList = () => {
                     rows="3"
                   />
                 </div>
-                
+
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status
@@ -274,7 +302,7 @@ const StoreList = () => {
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-                
+
                 <div className="flex justify-end gap-2 pt-4 border-t">
                   <button
                     type="button"
@@ -299,11 +327,28 @@ const StoreList = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Store Management</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Store Management
+            </h2>
             <p className="text-gray-600">View and manage all store locations</p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            <span className="text-gray-700 whitespace-nowrap">
+              Rows per page:
+            </span>
+            <select
+              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>{" "}
             <input
               type="text"
               placeholder="🔍 Search stores..."
@@ -314,22 +359,6 @@ const StoreList = () => {
               }}
               className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
             />
-            
-            <div className="flex items-center gap-2">
-              <span className="text-gray-700 whitespace-nowrap">Show:</span>
-              <select 
-                className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-              </select>
-            </div>  
           </div>
         </div>
 
@@ -339,33 +368,70 @@ const StoreList = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         )}
-        
+
         {error && (
           <div className="p-3 bg-red-100 text-red-700 rounded-lg mb-4">
             {error}
           </div>
         )}
-
+        <br></br>
+        {/* Export Buttons */}
+        <div className="flex flex-wrap gap-2">
+          {["CSV", "SQL", "TXT", "JSON"].map((type) => (
+            <button
+              key={type}
+              onClick={() => handleExport(type)}
+              className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                filteredStores.length === 0
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              }`}
+              disabled={filteredStores.length === 0}
+            >
+              Export as {type}
+            </button>
+          ))}
+        </div>
+        <br></br>
         {/* Stores Table */}
         <div className="overflow-x-auto">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    #
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Store
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created By
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {currentStores.length > 0 ? (
                   currentStores.map((store, index) => (
-                    <tr key={store.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={store.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {index + 1 + indexOfFirstStore}
                       </td>
@@ -376,7 +442,7 @@ const StoreList = () => {
                         {store.type}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
-                        {store.description || 'N/A'}
+                        {store.description || "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {store.createdDate}
@@ -385,16 +451,18 @@ const StoreList = () => {
                         {store.createdBy}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          store.status === "Active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}>
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            store.status === "Active"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
                           {store.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button 
+                        <button
                           onClick={() => handleEditClick(store)}
                           className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-50"
                         >
@@ -406,8 +474,13 @@ const StoreList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500">
-                      {stores.length === 0 ? 'No stores available' : 'No stores match your search'}
+                    <td
+                      colSpan="8"
+                      className="px-6 py-4 text-center text-sm text-gray-500"
+                    >
+                      {stores.length === 0
+                        ? "No stores available"
+                        : "No stores match your search"}
                     </td>
                   </tr>
                 )}
@@ -419,44 +492,32 @@ const StoreList = () => {
         {/* Footer Section */}
         <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-sm text-gray-600">
-            Showing <span className="font-medium">{indexOfFirstStore + 1}</span> to{' '}
-            <span className="font-medium">{Math.min(indexOfLastStore, filteredStores.length)}</span>{' '}
-            of <span className="font-medium">{filteredStores.length}</span> stores
-          </div>
-          
-          {/* Export Buttons */}
-          <div className="flex flex-wrap gap-2">
-            {['CSV', 'SQL', 'TXT', 'JSON'].map((type) => (
-              <button
-                key={type}
-                onClick={() => handleExport(type)}
-                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  filteredStores.length === 0
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-                disabled={filteredStores.length === 0}
-              >
-                <Download size={14} />
-                Export {type}
-              </button>
-            ))}
+            Showing <span className="font-medium">{indexOfFirstStore + 1}</span>{" "}
+            to{" "}
+            <span className="font-medium">
+              {Math.min(indexOfLastStore, filteredStores.length)}
+            </span>{" "}
+            of <span className="font-medium">{filteredStores.length}</span>{" "}
+            stores
           </div>
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="mt-4 flex justify-center">
-            <nav className="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            <nav
+              className="inline-flex rounded-md shadow-sm -space-x-px"
+              aria-label="Pagination"
+            >
               <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="sr-only">Previous</span>
                 &larr;
               </button>
-              
+
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNum;
                 if (totalPages <= 5) {
@@ -475,23 +536,25 @@ const StoreList = () => {
                     onClick={() => setCurrentPage(pageNum)}
                     className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                       currentPage === pageNum
-                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                        : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                     }`}
                   >
                     {pageNum}
                   </button>
                 );
               })}
-              
+
               {totalPages > 5 && currentPage < totalPages - 2 && (
                 <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
                   ...
                 </span>
               )}
-              
+
               <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >

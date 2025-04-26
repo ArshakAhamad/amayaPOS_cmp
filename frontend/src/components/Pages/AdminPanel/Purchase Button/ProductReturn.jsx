@@ -273,12 +273,12 @@ const ProductReturn = () => {
           <div className="barcode-select-container flex gap-4">
             <input
               type="text"
-              placeholder="Alt + A (Barcode)"
+              placeholder="Scan Barcode"
               className="p-3 border border-gray-300 rounded-lg w-64"
               value={barcodeInput}
               onChange={(e) => setBarcodeInput(e.target.value)}
             />
-            <select
+            {/*     <select
               className="p-3 border border-gray-300 rounded-lg w-64"
               value={selectedProduct}
               onChange={(e) => setSelectedProduct(e.target.value)}
@@ -289,7 +289,7 @@ const ProductReturn = () => {
                   {product.product_name}
                 </option>
               ))}
-            </select>
+            </select> */}
           </div>
         </div>
 
@@ -309,7 +309,9 @@ const ProductReturn = () => {
                 </th>
                 <th className="px-6 py-3 text-right w-[12%]">Avg Cost (LKR)</th>
                 <th className="px-6 py-3 text-center w-[10%]">Stock</th>
-                <th className="px-6 py-3 text-center w-[12%]">Remove</th>
+                <th className="px-6 py-3 text-center w-[12%]">
+                  Remove Product
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -378,7 +380,7 @@ const ProductReturn = () => {
                       onClick={() => handleRemoveProduct(index)}
                       className="text-red-600 hover:text-red-800 font-semibold"
                     >
-                      Remove
+                      Delete Item
                     </button>
                   </td>
                 </tr>
@@ -471,9 +473,9 @@ const ProductReturn = () => {
         </div>
 
         {/* 🔷 Total Section */}
-        <div className="flex justify-between items-center mt-6 p-4 bg-gray-100 rounded-lg">
-          <p className="text-xl font-semibold">Total : </p>
-          <p className="text-xl font-semibold text-red-500">
+        <div className="grid grid-cols-2 gap-4 mt-6 p-4 bg-gray-100 rounded-lg">
+          <p className="text-xl font-semibold">Total:</p>
+          <p className="text-xl font-semibold text-red-500 text-right">
             {products
               .reduce((acc, p) => acc + (parseFloat(p.total_cost) || 0), 0)
               .toLocaleString("en-US", {

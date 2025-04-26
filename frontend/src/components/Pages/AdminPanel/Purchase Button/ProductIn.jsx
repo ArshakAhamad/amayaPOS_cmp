@@ -283,35 +283,42 @@ const ProductIn = () => {
           <div className="flex items-center gap-4 flex-wrap">
             <input
               type="text"
-              placeholder="Alt + A (Barcode)"
+              placeholder="Scan Barcode or Enter Product Code  🔍"
               className="p-3 border border-gray-300 rounded-lg w-64"
             />
-            <select
-              className="p-3 border border-gray-300 rounded-lg w-full sm:w-[250px]"
-              onChange={(e) => setSelectedSupplier(e.target.value)}
-              value={selectedSupplier}
-              required
-            >
-              <option value="">Select Supplier</option>
-              {suppliers.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.supplier_name}
+            {"  "}
+            {suppliers.length > 0 && (
+              <select
+                className="p-3 border border-gray-300 rounded-lg w-full sm:w-[250px]"
+                onChange={(e) => setSelectedSupplier(e.target.value)}
+                value={selectedSupplier}
+                required
+              >
+                <option value="">
+                  Select Supplier ({suppliers.length} available)
                 </option>
-              ))}
-            </select>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.supplier_name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="flex items-center gap-4 flex-wrap">
             <button
               className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400"
               onClick={handleSave}
               disabled={isLoading}
+              title="Generate Goods Received Note (GRN)"
             >
-              Complete GRN
+              Generate GRN
             </button>
             <button
               onClick={handleSave}
               className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400"
               disabled={isLoading}
+              title="Save bill and update supplier records"
             >
               Save Bill & Supplier
             </button>
@@ -362,7 +369,7 @@ const ProductIn = () => {
                         onChange={(selectedOption) =>
                           handleProductSelect(selectedOption, index)
                         }
-                        placeholder="Select Product"
+                        placeholder="Search or select product"
                         isClearable
                         className="basic-single"
                         classNamePrefix="select"
@@ -430,17 +437,10 @@ const ProductIn = () => {
                     <button
                       onClick={() => handleRemoveProduct(index, product.id)}
                       className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                      title="Remove this product"
                     >
                       Remove
                     </button>
-                    {/*    <button
-                      onClick={() =>
-                        setEditingRows({ ...editingRows, [index]: true })
-                      }
-                      className="ml-2 text-blue-500 hover:text-blue-700"
-                    >
-                      Edit Product
-                    </button> */}
                   </td>
                 </tr>
               ))}
@@ -453,12 +453,13 @@ const ProductIn = () => {
           <button
             onClick={handleAddProduct}
             className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700"
+            title="Add a new product row to the list"
           >
-            Add New Product
+            + Add Product Line
           </button>
 
-          <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg min-w-[300px]">
-            <p className="text-xl font-semibold">Total</p>
+          <div className="flex items-center p-4 bg-gray-100 rounded-lg">
+            <p className="text-xl font-semibold mr-4">Total Amount:</p>
             <p className="text-xl font-semibold text-red-500">
               {productDetails
                 .reduce(

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 const CreateStoreTypes = () => {
   const [storeTypeDetails, setStoreTypeDetails] = useState({
@@ -16,29 +16,29 @@ const CreateStoreTypes = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     try {
-      const response = await fetch('http://localhost:5000/api/store-types', {
-        method: 'POST',
+      const response = await fetch("http://localhost:5000/api/store-types", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           storeTypeName: storeTypeDetails.storeTypeName,
-          description: storeTypeDetails.description
+          description: storeTypeDetails.description,
         }),
       });
-  
+
       const data = await response.json();
       if (data.success) {
-        alert('Store type created successfully!');
-        setStoreTypeDetails({ storeTypeName: '', description: '' });
+        alert("Store type created successfully!");
+        setStoreTypeDetails({ storeTypeName: "", description: "" });
       } else {
-        alert('Store type created successfully! ');
+        alert("Store type created successfully! ");
       }
     } catch (err) {
-      console.error('Error creating store type:', err);
-      alert('Server error. Please try again.');
+      console.error("Error creating store type:", err);
+      alert("Server error. Please try again.");
     }
   };
 
@@ -47,15 +47,22 @@ const CreateStoreTypes = () => {
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-3xl">
         {/* 🔷 Centered Header */}
         <div className="text-center mb-6">
-          <h3 className="text-2xl font-semibold text-gray-700">Create Store Type</h3>
-          <p className="text-sm text-gray-500 mt-1">You can create new store types from here</p>
+          <h3 className="text-2xl font-semibold text-gray-700">
+            Create Store Type
+          </h3>
+          <p className="text-sm text-gray-500 mt-1">
+            You can create new store types from here
+          </p>
         </div>
-        
+
         {/* 🔷 Form Section */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Store Type Name */}
           <div>
-            <label htmlFor="storeTypeName" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="storeTypeName"
+              className="block text-sm font-medium text-gray-700"
+            >
               Store Type Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -65,14 +72,17 @@ const CreateStoreTypes = () => {
               value={storeTypeDetails.storeTypeName}
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-lg"
-              placeholder="Enter Store Type Name"
+              placeholder=" Store Type Name"
               required
             />
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700"
+            >
               Description
             </label>
             <textarea
@@ -82,7 +92,7 @@ const CreateStoreTypes = () => {
               onChange={handleChange}
               rows="4"
               className="w-full p-3 border border-gray-300 rounded-lg"
-              placeholder="Enter Store Type Description"
+              placeholder="About this store type"
             />
           </div>
 
@@ -90,10 +100,12 @@ const CreateStoreTypes = () => {
           <div className="flex justify-between mt-6">
             <button
               type="button"
-              onClick={() => setStoreTypeDetails({ storeTypeName: '', description: '' })}
+              onClick={() =>
+                setStoreTypeDetails({ storeTypeName: "", description: "" })
+              }
               className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
             >
-              New
+              Clear form
             </button>
             <button
               type="submit"

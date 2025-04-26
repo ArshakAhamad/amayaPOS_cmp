@@ -164,7 +164,11 @@ const Dashboard = () => {
             <div className="animate-pulse h-8 w-3/4 bg-gray-200 rounded mt-2"></div>
           ) : (
             <p className="text-2xl font-bold">
-              LKR {salesData.productSale.toFixed(2)}
+              LKR{" "}
+              {salesData.productSale.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
           )}
         </div>
@@ -175,7 +179,11 @@ const Dashboard = () => {
             <div className="animate-pulse h-8 w-3/4 bg-gray-200 rounded mt-2"></div>
           ) : (
             <p className="text-2xl font-bold">
-              LKR {salesData.voucherSale.toFixed(2)}
+              LKR{" "}
+              {salesData.voucherSale.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
           )}
         </div>
@@ -185,7 +193,9 @@ const Dashboard = () => {
           {loading.dashboard ? (
             <div className="animate-pulse h-8 w-3/4 bg-gray-200 rounded mt-2"></div>
           ) : (
-            <p className="text-2xl font-bold">{salesData.totalProducts}</p>
+            <p className="text-2xl font-bold">
+              {salesData.totalProducts.toLocaleString("en-US")}
+            </p>
           )}
         </div>
 
@@ -194,7 +204,9 @@ const Dashboard = () => {
           {loading.dashboard ? (
             <div className="animate-pulse h-8 w-3/4 bg-gray-200 rounded mt-2"></div>
           ) : (
-            <p className="text-2xl font-bold">{salesData.totalCustomers}</p>
+            <p className="text-2xl font-bold">
+              {salesData.totalCustomers.toLocaleString("en-US")}
+            </p>
           )}
         </div>
       </div>
@@ -233,39 +245,62 @@ const Dashboard = () => {
               <p className="text-red-500">{error.cashiers}</p>
             </div>
           ) : cashierData.length > 0 ? (
-            cashierData.map((cashier, index) => (
-              <div
-                key={index}
-                className="cashier-card p-4 bg-white rounded-lg shadow-md"
-              >
-                <h3 className="text-lg font-bold mb-3">{cashier.name}</h3>
-                <p className="mb-1">
-                  Total Sales:{" "}
-                  <span className="font-semibold">
-                    LKR {cashier.sale.toFixed(2)}
-                  </span>
-                </p>
-                <p className="mb-1">
-                  Cash:{" "}
-                  <span className="font-semibold">
-                    LKR {cashier.cash.toFixed(2)}
-                  </span>
-                </p>
-                <p>
-                  Vouchers:{" "}
-                  <span className="font-semibold">
-                    LKR {cashier.voucher.toFixed(2)}
-                  </span>
-                </p>
-              </div>
-            ))
+            cashierData.map((cashier, index) => {
+              const hasSales =
+                cashier.sale > 0 || cashier.cash > 0 || cashier.voucher > 0;
+
+              return (
+                <div
+                  key={index}
+                  className="cashier-card p-4 bg-white rounded-lg shadow-md"
+                >
+                  <h3 className="text-lg font-bold mb-3">{cashier.name} :</h3>
+                  {hasSales ? (
+                    <>
+                      <p className="mb-1">
+                        Total Sales:{" "}
+                        <span className="font-semibold">
+                          LKR{" "}
+                          {cashier.sale.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </p>
+                      <p className="mb-1">
+                        Cash:{" "}
+                        <span className="font-semibold">
+                          LKR{" "}
+                          {cashier.cash.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </p>
+                      <p>
+                        Vouchers:{" "}
+                        <span className="font-semibold">
+                          LKR{" "}
+                          {cashier.voucher.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-gray-500 py-2">No sales today</p>
+                  )}
+                </div>
+              );
+            })
           ) : (
             <div className="col-span-full text-center py-8">
-              <p className="text-gray-500">No cashier data available</p>
+              <p className="text-gray-500">No cashier activity today</p>
             </div>
           )}
-        </div>{" "}
-        <br></br>
+        </div>
+        <br />
       </div>
     </div>
   );

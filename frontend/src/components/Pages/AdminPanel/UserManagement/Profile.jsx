@@ -188,7 +188,7 @@ const Profile = () => {
             <p className="success-message">{successMessage}</p>
           )}
 
-          <button type="submit">Update Profile</button>
+          <button type="submit">Update Password</button>
         </form>
       </div>
     </div>

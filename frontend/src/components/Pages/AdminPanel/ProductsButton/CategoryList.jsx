@@ -1,13 +1,24 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Pencil, Download, X, Save } from "lucide-react";
+import {
+  Pencil,
+  Download,
+  X,
+  Save,
+  CheckCircle,
+  XCircle,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+} from "lucide-react";
 
 const CategoryList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentCategory, setCurrentCategory] = useState(null);
@@ -17,6 +28,22 @@ const CategoryList = () => {
     status: "Active",
   });
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Status configuration with consistent colors and icons
+  const statusConfig = {
+    Active: {
+      bg: "bg-green-50",
+      text: "text-green-700",
+      icon: <CheckCircle className="w-4 h-4" />,
+      label: "Active",
+    },
+    Inactive: {
+      bg: "bg-red-50",
+      text: "text-red-700",
+      icon: <XCircle className="w-4 h-4" />,
+      label: "Inactive",
+    },
+  };
 
   // Fetch categories from the backend API
   useEffect(() => {
@@ -211,10 +238,10 @@ const CategoryList = () => {
       category.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredCategories.length / entriesPerPage);
+  const totalPages = Math.ceil(filteredCategories.length / rowsPerPage);
   const paginatedCategories = filteredCategories.slice(
-    (currentPage - 1) * entriesPerPage,
-    currentPage * entriesPerPage
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
   );
 
   if (loading) {
@@ -240,7 +267,8 @@ const CategoryList = () => {
             {successMessage}
           </div>
         )}
-        {/* Edit Modal - Updated to match StoreType style */}
+
+        {/* Edit Modal */}
         {isEditModalOpen && currentCategory && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
@@ -249,11 +277,11 @@ const CategoryList = () => {
                 <button
                   onClick={() => setIsEditModalOpen(false)}
                   className="text-gray-500 hover:text-gray-700"
+                  title="Close modal"
                 >
                   <X size={20} />
                 </button>
               </div>
-              <br></br>
               <form onSubmit={handleEditSubmit} className="p-4">
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -302,12 +330,14 @@ const CategoryList = () => {
                     type="button"
                     onClick={() => setIsEditModalOpen(false)}
                     className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                    title="Cancel changes"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
+                    title="Save changes"
                   >
                     <Save size={16} />
                     Save Changes
@@ -328,6 +358,22 @@ const CategoryList = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            <span className="text-gray-700 whitespace-nowrap">
+              Rows per page:
+            </span>
+            <select
+              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              title="Select number of rows to display"
+            >
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>{" "}
             <input
               type="text"
               className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
@@ -338,27 +384,31 @@ const CategoryList = () => {
                 setCurrentPage(1);
               }}
             />
-
-            <div className="flex items-center gap-2">
-              <span className="text-gray-700 whitespace-nowrap">
-                Entries per page:
-              </span>
-              <select
-                className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={entriesPerPage}
-                onChange={(e) => {
-                  setEntriesPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-              </select>
-            </div>
           </div>
         </div>
 
+        {/* Export Controls*/}
+        <div className="mb-4 flex flex-wrap justify-between items-center gap-4">
+          <br></br>
+          <div className="flex flex-wrap gap-2">
+            {["CSV", "SQL", "TXT", "JSON"].map((type) => (
+              <button
+                key={type}
+                onClick={() => handleExport(type)}
+                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  filteredCategories.length === 0
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
+                disabled={filteredCategories.length === 0}
+                title={`Export data as ${type} format`}
+              >
+                Export as {type}
+              </button>
+            ))}
+          </div>
+        </div>
+        <br></br>
         {/* Table Section */}
         <div className="overflow-x-auto">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -392,7 +442,11 @@ const CategoryList = () => {
                 {paginatedCategories.length > 0 ? (
                   paginatedCategories.map((category, index) => {
                     const rowIndex =
-                      (currentPage - 1) * entriesPerPage + index + 1;
+                      (currentPage - 1) * rowsPerPage + index + 1;
+                    const status = category.status || "Active";
+                    const statusInfo =
+                      statusConfig[status] || statusConfig.Active;
+
                     return (
                       <tr
                         key={category.id}
@@ -414,21 +468,22 @@ const CategoryList = () => {
                           {category.created_by || "Admin"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                              category.status === "Active"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
+                          <div
+                            className={`flex items-center gap-1 px-2 py-1 rounded-full ${statusInfo.bg} ${statusInfo.text}`}
                           >
-                            {category.status || "Active"}
-                          </span>
+                            {statusInfo.icon}
+                            <span className="text-xs font-medium">
+                              {statusInfo.label}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
                             onClick={() => handleEditClick(category)}
                             className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-50"
+                            title="Edit category"
                           >
+                            <Pencil size={16} />
                             <span className="sr-only">Edit</span>
                           </button>
                         </td>
@@ -457,86 +512,60 @@ const CategoryList = () => {
           <div className="text-sm text-gray-600">
             Showing{" "}
             <span className="font-medium">
-              {(currentPage - 1) * entriesPerPage + 1}
+              {(currentPage - 1) * rowsPerPage + 1}
             </span>{" "}
             to{" "}
             <span className="font-medium">
-              {Math.min(
-                currentPage * entriesPerPage,
-                filteredCategories.length
-              )}
+              {Math.min(currentPage * rowsPerPage, filteredCategories.length)}
             </span>{" "}
             of <span className="font-medium">{filteredCategories.length}</span>{" "}
             categories
           </div>
-
-          {/* Export Buttons */}
-          <div className="flex flex-wrap gap-2">
-            {["CSV", "SQL", "TXT", "JSON"].map((type) => (
-              <button
-                key={type}
-                onClick={() => handleExport(type)}
-                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  filteredCategories.length === 0
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
-                disabled={filteredCategories.length === 0}
-              >
-                Export {type}
-              </button>
-            ))}
-          </div>
         </div>
-        {""}
-        {/* Pagination */}
+        <br></br>
+        {/* Improved Pagination Controls */}
         {totalPages > 1 && (
-          <div className="mt-4 flex justify-between items-center">
-            <div className="text-sm text-gray-600 hidden sm:block">
+          <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-gray-600">
               Page {currentPage} of {totalPages}
             </div>
 
             <nav className="flex items-center gap-1">
               <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="First page"
-              >
-                «
-              </button>
-
-              <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Previous page"
+                className="p-2 rounded border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                title="Previous page"
               >
                 Previous
               </button>
 
-              {/* Always show first page */}
+              {/* Show first page */}
               <button
                 onClick={() => setCurrentPage(1)}
                 className={`w-10 h-10 rounded ${
-                  currentPage === 1 ? "bg-blue-600 text-white" : "border"
+                  currentPage === 1
+                    ? "bg-blue-600 text-white"
+                    : "border hover:bg-gray-50"
                 }`}
               >
                 1
               </button>
 
               {/* Show ellipsis if needed */}
-              {currentPage > 3 && <span className="px-2">...</span>}
+              {currentPage > 3 && (
+                <span className="px-2 text-gray-500">...</span>
+              )}
 
               {/* Show pages around current page */}
-              {Array.from({ length: Math.min(5, totalPages - 2) }, (_, i) => {
+              {Array.from({ length: Math.min(3, totalPages - 2) }, (_, i) => {
                 let pageNum;
                 if (currentPage <= 3) {
                   pageNum = i + 2;
                 } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
+                  pageNum = totalPages - 3 + i;
                 } else {
-                  pageNum = currentPage - 2 + i;
+                  pageNum = currentPage - 1 + i;
                 }
 
                 if (pageNum > 1 && pageNum < totalPages) {
@@ -547,7 +576,7 @@ const CategoryList = () => {
                       className={`w-10 h-10 rounded ${
                         currentPage === pageNum
                           ? "bg-blue-600 text-white"
-                          : "border"
+                          : "border hover:bg-gray-50"
                       }`}
                     >
                       {pageNum}
@@ -559,17 +588,17 @@ const CategoryList = () => {
 
               {/* Show ellipsis if needed */}
               {currentPage < totalPages - 2 && (
-                <span className="px-2">...</span>
+                <span className="px-2 text-gray-500">...</span>
               )}
 
-              {/* Always show last page if different from first */}
+              {/* Show last page if different from first */}
               {totalPages > 1 && (
                 <button
                   onClick={() => setCurrentPage(totalPages)}
                   className={`w-10 h-10 rounded ${
                     currentPage === totalPages
                       ? "bg-blue-600 text-white"
-                      : "border"
+                      : "border hover:bg-gray-50"
                   }`}
                 >
                   {totalPages}
@@ -581,19 +610,10 @@ const CategoryList = () => {
                   setCurrentPage((p) => Math.min(totalPages, p + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="p-2 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Next page"
+                className="p-2 rounded border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                title="Next page"
               >
                 Next
-              </button>
-
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Last page"
-              >
-                »
               </button>
             </nav>
           </div>

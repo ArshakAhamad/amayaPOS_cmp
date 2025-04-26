@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 
 const ProductMovement = () => {
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [endDate, setEndDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [selectedProduct, setSelectedProduct] = useState("");
   const [products, setProducts] = useState([]);
   const [productMovementData, setProductMovementData] = useState([]);
@@ -20,7 +24,9 @@ const ProductMovement = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/productMovement/products");
+        const response = await fetch(
+          "http://localhost:5000/api/productMovement/products"
+        );
         const data = await response.json();
         if (data.success) {
           setProducts(data.products);
@@ -53,18 +59,18 @@ const ProductMovement = () => {
 
       if (data.success) {
         // Process and validate all numeric fields
-        const processedData = data.movements.map(item => ({
+        const processedData = data.movements.map((item) => ({
           ...item,
-          date: item.date || '',
-          type: item.type || '',
-          reference: item.reference || '',
-          product: item.product || '',
+          date: item.date || "",
+          type: item.type || "",
+          reference: item.reference || "",
+          product: item.product || "",
           price: Number(item.price) || 0,
           cost: Number(item.cost) || 0,
           productIn: Number(item.productIn) || 0,
           productOut: Number(item.productOut) || 0,
-          returnId: item.returnId || '',
-          inventory: Number(item.inventory) || 0
+          returnId: item.returnId || "",
+          inventory: Number(item.inventory) || 0,
         }));
 
         setProductMovementData(processedData);
@@ -73,7 +79,7 @@ const ProductMovement = () => {
           voucherSales: 0, // Not currently calculated
           costDiscounts: Number(data.summary?.costDiscounts) || 0,
           expenses: 0, // Not currently calculated
-          profitLoss: Number(data.summary?.profitLoss) || 0
+          profitLoss: Number(data.summary?.profitLoss) || 0,
         });
       } else {
         setError(data.message || "No data available for the selected filters");
@@ -92,7 +98,7 @@ const ProductMovement = () => {
         <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
           <div className="text-red-500 p-4 border border-red-200 bg-red-50 rounded">
             {error}
-            <button 
+            <button
               onClick={() => setError(null)}
               className="ml-4 px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
             >
@@ -114,12 +120,24 @@ const ProductMovement = () => {
 
         {/* Date Pickers & Generate Button */}
         <div className="sales-controls flex flex-wrap gap-4 items-center justify-between mb-6">
+          <label
+            htmlFor="startDate"
+            className="text-sm font-medium text-gray-700 mb-1"
+          >
+            Start Date
+          </label>
           <input
             type="date"
             className="date-picker p-3 border rounded-lg text-sm w-full sm:w-auto"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
           />
+          <label
+            htmlFor="endDate"
+            className="text-sm font-medium text-gray-700 mb-1"
+          >
+            End Date
+          </label>
           <input
             type="date"
             className="date-picker p-3 border rounded-lg text-sm w-full sm:w-auto"
@@ -128,7 +146,7 @@ const ProductMovement = () => {
           />
 
           <select
-            className="p-3 border border-gray-300 rounded-lg w-full sm:w-[250px]"
+            className="date-picker p-3 border rounded-lg text-sm w-full sm:w-auto"
             onChange={handleProductSelect}
             value={selectedProduct}
             disabled={loading}
@@ -140,13 +158,13 @@ const ProductMovement = () => {
               </option>
             ))}
           </select>
-          
-          <button 
+
+          <button
             className="generate-btn p-3 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 disabled:bg-blue-300"
             onClick={generateReport}
             disabled={loading}
           >
-            {loading ? 'Generating...' : 'Generate'}
+            {loading ? "Generating..." : "Generate Report"}
           </button>
         </div>
 
@@ -214,14 +232,17 @@ const ProductMovement = () => {
                     <td className="px-4 py-2">{row.cost.toFixed(2)}</td>
                     <td className="px-4 py-2">{row.productIn}</td>
                     <td className="px-4 py-2">{row.productOut}</td>
-                    <td className="px-4 py-2">{row.returnId || '-'}</td>
+                    <td className="px-4 py-2">{row.returnId || "-"}</td>
                     <td className="px-4 py-2">{row.inventory}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="10" className="text-center py-4 italic text-gray-500">
-                    {loading ? 'Loading data...' : 'No Data Available'}
+                  <td
+                    colSpan="10"
+                    className="text-center py-4 italic text-gray-500"
+                  >
+                    {loading ? "Loading data..." : "No Sales Data Available"}
                   </td>
                 </tr>
               )}
