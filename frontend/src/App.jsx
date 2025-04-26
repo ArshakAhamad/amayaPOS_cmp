@@ -255,31 +255,42 @@ const AdminLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => {
 };
 
 // Cashier Layout Component
-const CashierLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => (
-  <div className="flex">
-    <SidebarCashier
-      isSidebarOpen={isSidebarOpen}
-      toggleSidebar={toggleSidebar}
-    />
-    <div
-      className={`main-content transition-all duration-300 ${
-        isSidebarOpen
-          ? "ml-64 w-[calc(100%-16rem)]"
-          : "ml-20 w-[calc(100%-5rem)]"
-      }`}
-    >
-      <Topbar
-        toggleSidebar={toggleSidebar}
-        setUserRole={setUserRole}
-        userRole="Cashier"
+const CashierLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => {
+  const [activeTabTitle, setActiveTabTitle] = useState("Dashboard");
+
+  return (
+    <div className="flex">
+      <SidebarCashier
         isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+        setActiveTabTitle={setActiveTabTitle}
       />
-      <div className="p-8">
-        <Outlet />
+      <div
+        className={`main-content transition-all duration-300 ${
+          isSidebarOpen
+            ? "ml-64 w-[calc(100%-16rem)]"
+            : "ml-20 w-[calc(100%-5rem)]"
+        }`}
+      >
+        <Topbar
+          toggleSidebar={toggleSidebar}
+          setUserRole={setUserRole}
+          userRole="Cashier"
+          isSidebarOpen={isSidebarOpen}
+        />
+        <div className="p-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">
+              {activeTabTitle}
+            </h1>
+            <div className="border-b border-gray-200 mt-2"></div>
+          </div>
+          <Outlet />
+        </div>
+        <Footer />
       </div>
-      <Footer />
     </div>
-  </div>
-);
+  );
+};
 
 export default App;

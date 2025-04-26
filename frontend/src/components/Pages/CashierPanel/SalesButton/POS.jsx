@@ -82,11 +82,9 @@ const POS = () => {
 
   return (
     <div className="main-content p-6">
-      <h2 className="text-2xl font-semibold text-center mb-6">POS</h2>
-
       <div className="flex flex-col items-center">
         <div className="mb-4 w-64">
-          <label className="block mb-2">Opening Cash Amount (LKR)</label>
+          <label className="block mb-2">Opening Cash Amount (LKR)</label>{" "}
           <input
             type="number"
             className="w-full p-2 border rounded"

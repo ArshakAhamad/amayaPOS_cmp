@@ -41,6 +41,16 @@ const NewCustomer = () => {
     }
   };
 
+  const handleClearForm = () => {
+    setCustomerDetails({
+      customerName: "",
+      phone: "",
+      address: "",
+    });
+    setMessage("");
+    setMessageType("");
+  };
+
   return (
     <div className="main-content p-6 flex justify-center items-center min-h-screen">
       <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-300 w-full max-w-3xl">
@@ -117,10 +127,11 @@ const NewCustomer = () => {
           <div className="flex justify-between mt-8 gap-6">
             <button
               type="button"
+              onClick={handleClearForm}
               className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               title="Clear the form and start a new customer entry"
             >
-              Clear
+              Clear Form
             </button>
 
             <button

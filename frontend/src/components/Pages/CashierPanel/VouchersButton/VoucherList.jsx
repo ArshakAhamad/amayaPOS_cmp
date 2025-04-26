@@ -6,7 +6,7 @@ const VoucherList = () => {
   const [vouchers, setVouchers] = useState([]);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -212,11 +212,24 @@ const VoucherList = () => {
     );
   });
 
-  const totalPages = Math.ceil(filteredVouchers.length / entriesPerPage);
+  const totalPages = Math.ceil(filteredVouchers.length / rowsPerPage);
   const paginatedVouchers = filteredVouchers.slice(
-    (currentPage - 1) * entriesPerPage,
-    currentPage * entriesPerPage
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
   );
+
+  // Status color mapping
+  const statusColors = {
+    Issued: "text-blue-600",
+    Redeemed: "text-green-600",
+    Cancelled: "text-red-600",
+    Expired: "text-orange-600",
+  };
+
+  const activeColors = {
+    Active: "text-green-600",
+    Inactive: "text-red-600",
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -229,16 +242,26 @@ const VoucherList = () => {
         <div className="p-6">
           {/* Title & Search */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold">Manage Vouchers</h2>
+            <span>Rows per page: </span>
+            <select
+              className="p-2 border rounded-lg"
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              title="Select number of rows to display per page"
+            >
+              <option value="25">25</option>
+              <option value="75">75</option>
+              <option value="100">100</option>
+            </select>{" "}
             <input
               type="text"
-              placeholder="Search vouchers..."
+              placeholder="Search vouchers 🔍"
               className="p-2 border rounded-lg w-64"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
+          <br></br>
           {/* Messages */}
           {successMessage && (
             <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
@@ -251,20 +274,27 @@ const VoucherList = () => {
             </div>
           )}
 
+          {/* Export Buttons - Moved above the table */}
+          <div className="mb-6 flex gap-4">
+            {["CSV", "SQL", "TXT", "JSON"].map((type) => (
+              <button
+                key={type}
+                onClick={() => handleExport(type)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+                disabled={filteredVouchers.length === 0}
+              >
+                Export as {type}
+              </button>
+            ))}
+          </div>
+          <br></br>
           {/* Voucher Details */}
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl">Voucher Details</h3>
             <div className="flex gap-4 items-center">
-              <span>Entries per page: </span>
-              <select
-                className="p-2 border rounded-lg"
-                value={entriesPerPage}
-                onChange={(e) => setEntriesPerPage(Number(e.target.value))}
-              >
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-              </select>
+              <div className="relative group">
+                {" "}
+                <h2 className="text-2xl font-semibold">Manage Vouchers</h2>
+              </div>
             </div>
           </div>
 
@@ -293,7 +323,7 @@ const VoucherList = () => {
                     const redeemedDate =
                       voucher.redeemed_date || "Not Redeemed";
                     const rowIndex =
-                      (currentPage - 1) * entriesPerPage + index + 1;
+                      (currentPage - 1) * rowsPerPage + index + 1;
 
                     return (
                       <tr
@@ -321,11 +351,7 @@ const VoucherList = () => {
                         <td className="px-4 py-3">
                           <span
                             className={`font-semibold ${
-                              status === "Redeemed"
-                                ? "text-green-600"
-                                : status === "Cancelled"
-                                ? "text-red-600"
-                                : "text-blue-600"
+                              statusColors[status] || "text-gray-600"
                             }`}
                           >
                             {status}
@@ -334,9 +360,7 @@ const VoucherList = () => {
                         <td className="px-4 py-3">
                           <span
                             className={`font-semibold ${
-                              active === "Active"
-                                ? "text-green-600"
-                                : "text-red-600"
+                              activeColors[active] || "text-gray-600"
                             }`}
                           >
                             {active}
@@ -376,70 +400,9 @@ const VoucherList = () => {
             </table>
           </div>
 
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 mt-2">
             Showing {paginatedVouchers.length} of {filteredVouchers.length}{" "}
             vouchers
-          </div>
-
-          {/* 
-          <div className="flex justify-between items-center mt-4">
-            <div className="flex gap-1">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border rounded disabled:opacity-50"
-              >
-                Previous
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`px-3 py-1 border rounded ${
-                      currentPage === pageNum ? 'bg-blue-600 text-white' : ''
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              {totalPages > 5 && currentPage < totalPages - 2 && (
-                <span className="px-3 py-1">...</span>
-              )}
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border rounded disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          </div> */}
-
-          {/* Export Buttons */}
-          <div className="mt-6 flex gap-4">
-            {["CSV", "SQL", "TXT", "JSON"].map((type) => (
-              <button
-                key={type}
-                onClick={() => handleExport(type)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
-                disabled={filteredVouchers.length === 0}
-              >
-                Export {type}
-              </button>
-            ))}
           </div>
         </div>
       </div>

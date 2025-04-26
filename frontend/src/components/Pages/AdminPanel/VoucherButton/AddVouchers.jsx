@@ -118,7 +118,7 @@ const AddVouchers = () => {
                   setSuccessMessage("");
                 }}
               >
-                New (Clear)
+                Clear Form
               </button>
             </div>
 

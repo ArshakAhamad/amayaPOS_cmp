@@ -1,32 +1,55 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  HiHome,
-  HiArrowRight,
-  HiDocumentText,
-  HiCube,
-  HiTruck,
-} from "react-icons/hi";
+import { Link, useLocation } from "react-router-dom";
 import {
   House,
   IdCard,
   UsersRound,
-  Sailboat,
   ChartNoAxesColumnIncreasing,
   Gift,
-  Download,
-  Icon,
-  Copy,
 } from "lucide-react";
 import logo from "/logo.png";
 
-const SidebarCashier = ({ isSidebarOpen, toggleSidebar }) => {
+const SidebarCashier = ({
+  isSidebarOpen,
+  toggleSidebar,
+  setActiveTabTitle,
+}) => {
+  const location = useLocation();
+
   // State to handle toggling of each sub-menu
   const [isHomeOpen, setIsHomeOpen] = useState(false);
   const [isSalesOpen, setIsSalesOpen] = useState(false);
   const [isVouchersOpen, setIsVouchersOpen] = useState(false);
   const [isUserManagementOpen, setIsUserManagementOpen] = useState(false);
   const [isContactsOpen, setIsContactsOpen] = useState(false);
+
+  // Function to handle tab selection and update the title
+  const handleTabSelect = (title) => {
+    setActiveTabTitle(title);
+  };
+
+  // Map of routes to their display titles
+  const routeTitles = {
+    "/CashierPanel/": "Dashboard",
+    "/CashierPanel/CashInHand": "Cash In Hand",
+    "/CashierPanel/ProductMovement": "Product Movement",
+    "/CashierPanel/POS": "POS",
+    "/CashierPanel/POSReturn": "POS Return",
+    "/CashierPanel/POSReceipts": "POS Receipts",
+    "/CashierPanel/POSReorders": "POS Reorders",
+    "/CashierPanel/POSExpenses": "POS Expenses",
+    "/CashierPanel/VoucherList": "Voucher List",
+    "/CashierPanel/AddVouchers": "Add Vouchers",
+    "/CashierPanel/Profile": "Profile",
+    "/CashierPanel/CustomerList": "Customer List",
+    "/CashierPanel/NewCustomer": "New Customer",
+  };
+
+  // Set the initial tab title based on current location
+  React.useEffect(() => {
+    const currentTitle = routeTitles[location.pathname] || "";
+    setActiveTabTitle(currentTitle);
+  }, [location.pathname]);
 
   return (
     <div
@@ -59,18 +82,21 @@ const SidebarCashier = ({ isSidebarOpen, toggleSidebar }) => {
               <Link
                 to="/CashierPanel/"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("Dashboard")}
               >
                 <span>Dashboard</span>
               </Link>
               <Link
                 to="/CashierPanel/CashInHand"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("Cash In Hand")}
               >
                 <span>Cash In Hand</span>
               </Link>
               <Link
                 to="/CashierPanel/ProductMovement"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("Product Movement")}
               >
                 <span>Product Movement</span>
               </Link>
@@ -90,30 +116,35 @@ const SidebarCashier = ({ isSidebarOpen, toggleSidebar }) => {
               <Link
                 to="/CashierPanel/POS"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("POS")}
               >
                 <span>POS</span>
               </Link>
               <Link
                 to="/CashierPanel/POSReturn"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("POS Return")}
               >
                 <span>POS Return</span>
               </Link>
               <Link
                 to="/CashierPanel/POSReceipts"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("POS Receipts")}
               >
                 <span>POS Receipts</span>
               </Link>
               <Link
                 to="/CashierPanel/POSReorders"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("POS Reorders")}
               >
                 <span>POS Reorders</span>
               </Link>
               <Link
                 to="/CashierPanel/POSExpenses"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("POS Expenses")}
               >
                 <span>POS Expenses</span>
               </Link>
@@ -133,12 +164,14 @@ const SidebarCashier = ({ isSidebarOpen, toggleSidebar }) => {
               <Link
                 to="/CashierPanel/VoucherList"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("Voucher List")}
               >
                 <span>Voucher List</span>
               </Link>
               <Link
                 to="/CashierPanel/AddVouchers"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("Add Vouchers")}
               >
                 <span>Add Vouchers</span>
               </Link>
@@ -158,6 +191,7 @@ const SidebarCashier = ({ isSidebarOpen, toggleSidebar }) => {
               <Link
                 to="/CashierPanel/Profile"
                 className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                onClick={() => handleTabSelect("Profile")}
               >
                 <span>Profile</span>
               </Link>
@@ -178,12 +212,14 @@ const SidebarCashier = ({ isSidebarOpen, toggleSidebar }) => {
                 <Link
                   to="/CashierPanel/CustomerList"
                   className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                  onClick={() => handleTabSelect("Customer List")}
                 >
                   <span>Customer List</span>
                 </Link>
                 <Link
                   to="/CashierPanel/NewCustomer"
                   className="menu-item flex items-center p-2 hover:bg-blue-100 rounded"
+                  onClick={() => handleTabSelect("New Customer")}
                 >
                   <span>New</span>
                 </Link>

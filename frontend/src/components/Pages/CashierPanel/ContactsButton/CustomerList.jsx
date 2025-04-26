@@ -8,7 +8,7 @@ const CustomerList = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [successMessage, setSuccessMessage] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -218,10 +218,10 @@ const CustomerList = () => {
         .includes(searchQuery.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredCustomers.length / entriesPerPage);
+  const totalPages = Math.ceil(filteredCustomers.length / rowsPerPage);
   const paginatedCustomers = filteredCustomers.slice(
-    (currentPage - 1) * entriesPerPage,
-    currentPage * entriesPerPage
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
   );
 
   if (loading) {
@@ -248,7 +248,7 @@ const CustomerList = () => {
           </div>
         )}
 
-        {/* Edit Modal - Updated to match StoreType style */}
+        {/* Edit Modal */}
         {isEditModalOpen && currentCustomer && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
@@ -261,7 +261,6 @@ const CustomerList = () => {
                   <X size={20} />
                 </button>
               </div>
-              <br></br>
               <form onSubmit={handleEditSubmit} className="p-4">
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -300,6 +299,7 @@ const CustomerList = () => {
                     onChange={handleFormChange}
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     rows="3"
+                    placeholder="Address not provided"
                   />
                 </div>
 
@@ -311,8 +311,7 @@ const CustomerList = () => {
                     checked={editFormData.customer_active === 1}
                     onChange={handleFormChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />{" "}
-                  <br></br>
+                  />
                   <label
                     htmlFor="customer_active"
                     className="ml-2 block text-sm text-gray-700"
@@ -332,6 +331,7 @@ const CustomerList = () => {
                   <button
                     type="submit"
                     className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
+                    title="Save customer changes"
                   >
                     <Save size={16} />
                     Save Changes
@@ -349,6 +349,23 @@ const CustomerList = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            <span className="text-gray-700 whitespace-nowrap">
+              Rows per page:
+            </span>
+            <select
+              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              title="Select number of rows to display per page"
+            >
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
+            {"  "}
             <input
               type="text"
               className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
@@ -359,26 +376,30 @@ const CustomerList = () => {
                 setCurrentPage(1);
               }}
             />
-
-            <div className="flex items-center gap-2">
-              <span className="text-gray-700 whitespace-nowrap">
-                Entries per page:
-              </span>
-              <select
-                className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={entriesPerPage}
-                onChange={(e) => {
-                  setEntriesPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-              </select>
-            </div>
           </div>
         </div>
+        <br></br>
+        {/* Export Buttons - Moved above table */}
+        <div className="mb-4 flex flex-wrap justify-between items-center gap-4">
+          <div className="flex flex-wrap gap-2">
+            {["CSV", "SQL", "TXT", "JSON"].map((type) => (
+              <button
+                key={type}
+                onClick={() => handleExport(type)}
+                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  filteredCustomers.length === 0
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
+                disabled={filteredCustomers.length === 0}
+                title={`Export customer data as ${type} file`}
+              >
+                Export as {type}
+              </button>
+            ))}
+          </div>
+        </div>
+        <br></br>
 
         {/* Customer Table */}
         <div className="overflow-x-auto">
@@ -410,7 +431,7 @@ const CustomerList = () => {
                 {paginatedCustomers.length > 0 ? (
                   paginatedCustomers.map((customer, index) => {
                     const rowIndex =
-                      (currentPage - 1) * entriesPerPage + index + 1;
+                      (currentPage - 1) * rowsPerPage + index + 1;
                     return (
                       <tr
                         key={customer.customer_id}
@@ -423,10 +444,10 @@ const CustomerList = () => {
                           {customer.customer_name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {customer.customer_phone}
+                          {customer.customer_phone || "-"}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                          {customer.customer_address}
+                          {customer.customer_address || "Address not provided"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -445,7 +466,9 @@ const CustomerList = () => {
                           <button
                             onClick={() => handleEditClick(customer)}
                             className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-50"
+                            title="Edit customer details"
                           >
+                            <Pencil size={16} />
                             <span className="sr-only">Edit</span>
                           </button>
                         </td>
@@ -474,32 +497,14 @@ const CustomerList = () => {
           <div className="text-sm text-gray-600">
             Showing{" "}
             <span className="font-medium">
-              {(currentPage - 1) * entriesPerPage + 1}
+              {(currentPage - 1) * rowsPerPage + 1}
             </span>{" "}
             to{" "}
             <span className="font-medium">
-              {Math.min(currentPage * entriesPerPage, filteredCustomers.length)}
+              {Math.min(currentPage * rowsPerPage, filteredCustomers.length)}
             </span>{" "}
             of <span className="font-medium">{filteredCustomers.length}</span>{" "}
             customers
-          </div>
-
-          {/* Export Buttons */}
-          <div className="flex flex-wrap gap-2">
-            {["CSV", "SQL", "TXT", "JSON"].map((type) => (
-              <button
-                key={type}
-                onClick={() => handleExport(type)}
-                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  filteredCustomers.length === 0
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
-                disabled={filteredCustomers.length === 0}
-              >
-                Export {type}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -514,8 +519,10 @@ const CustomerList = () => {
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Previous page"
               >
                 <span className="sr-only">Previous</span>
+                &lt;
               </button>
 
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -539,6 +546,7 @@ const CustomerList = () => {
                         ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
                         : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                     }`}
+                    title={`Go to page ${pageNum}`}
                   >
                     {pageNum}
                   </button>
@@ -557,8 +565,10 @@ const CustomerList = () => {
                 }
                 disabled={currentPage === totalPages}
                 className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Next page"
               >
                 <span className="sr-only">Next</span>
+                &gt;
               </button>
             </nav>
           </div>
