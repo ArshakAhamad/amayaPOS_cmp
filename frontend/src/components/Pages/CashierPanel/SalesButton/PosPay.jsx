@@ -123,11 +123,12 @@ const PosPay = () => {
           paymentMethod,
           totalAmount,
           cartItems: cart,
-          customer: customerName || "Walk-In-Customer", // Use fetched name or default
+          customer: customerName || "Walk-In-Customer",
           phone: customerPhone,
           receiptNumber: 2865,
           cash: cashPayment,
-          cardNumber: cardPayment,
+          card: cardPayment,
+          voucher_id: giftVoucher || null, // Changed from amount to voucher_id
         }),
       });
 
