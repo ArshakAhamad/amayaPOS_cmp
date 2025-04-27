@@ -76,15 +76,22 @@ router.get("/cashiers", authenticateToken, async (req, res) => {
 
     const [cashiers] = await pool.query(`
       SELECT 
-        u.id,
-        u.username AS name,
-        COALESCE(SUM(p.total_amount), 0) AS sale,
-        COALESCE(SUM(CASE WHEN p.payment_method = 'Cash' THEN p.total_amount ELSE 0 END), 0) AS cash,
-        COALESCE(SUM(CASE WHEN p.payment_method = 'Voucher' THEN p.total_amount ELSE 0 END), 0) AS voucher
-      FROM system_user u
-      LEFT JOIN payments p ON u.username = p.created_by
-      WHERE u.role = 'Cashier'
-      GROUP BY u.id, u.username
+  u.id,
+  u.username AS name,
+  COALESCE(SUM(p.total_amount), 0) AS total_sales,
+  COALESCE(SUM(p.cash), 0) AS cash,
+  COALESCE(SUM(p.card), 0) AS card,
+  COALESCE(SUM(CASE WHEN p.voucher_id IS NOT NULL THEN p.total_amount ELSE 0 END), 0) AS voucher,
+  COUNT(p.id) AS transaction_count
+FROM system_user u
+LEFT JOIN payments p ON (
+  (u.username = p.created_by 
+  OR (u.username = 'Cashier' AND p.created_by = 'Admin'))
+  AND DATE(p.created_at) = '2025-04-28'  -- Specific date filter
+  AND p.status = 'Active'                -- Only active payments
+)
+WHERE u.role = 'Cashier'
+GROUP BY u.id, u.username
     `);
 
     console.log("Raw cashier data:", cashiers);
