@@ -11,6 +11,7 @@ import Sidepanel from "./components/Sidebar/Sidebar"; // Admin Sidebar
 import SidebarCashier from "./components/Sidebar/SidebarCashier"; // Cashier Sidebar
 import Topbar from "./components/Navigation/Topbar";
 import Footer from "./components/Navigation/footer";
+import { useEffect } from "react";
 
 // Admin Pages
 import Dashboard from "./components/Pages/AdminPanel/HomeButton/Dashboard";
@@ -73,12 +74,14 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [userRole, setUserRole] = useState(null); // Track user role (Admin/Cashier)
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Track authentication status
+  const [username, setUsername] = useState(
+    localStorage.getItem("username") || ""
+  );
 
   // Debug: Log state changes
-  React.useEffect(() => {
-    console.log("isAuthenticated:", isAuthenticated);
-    console.log("userRole:", userRole);
-  }, [isAuthenticated, userRole]);
+  useEffect(() => {
+    console.log("Current username:", username);
+  }, [username]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -97,6 +100,7 @@ function App() {
               <Login
                 setIsAuthenticated={setIsAuthenticated}
                 setUserRole={setUserRole}
+                setUsername={setUsername} // Pass setUsername
               />
             }
           />
@@ -108,6 +112,7 @@ function App() {
               <Logout
                 setIsAuthenticated={setIsAuthenticated}
                 setUserRole={setUserRole}
+                setUsername={setUsername}
               />
             }
           />
@@ -136,6 +141,7 @@ function App() {
                   isSidebarOpen={isSidebarOpen}
                   toggleSidebar={toggleSidebar}
                   setUserRole={setUserRole}
+                  username={username}
                 />
               ) : (
                 <Navigate to="/Login" replace />
@@ -189,6 +195,7 @@ function App() {
                   isSidebarOpen={isSidebarOpen}
                   toggleSidebar={toggleSidebar}
                   setUserRole={setUserRole}
+                  username={username}
                 />
               ) : (
                 <Navigate to="/Login" replace />
@@ -222,7 +229,12 @@ function App() {
 }
 
 // Admin Layout Component
-const AdminLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => {
+const AdminLayout = ({
+  isSidebarOpen,
+  toggleSidebar,
+  setUserRole,
+  username,
+}) => {
   const [activeTabTitle, setActiveTabTitle] = useState("Dashboard");
 
   return (
@@ -237,6 +249,7 @@ const AdminLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => {
           toggleSidebar={toggleSidebar}
           setUserRole={setUserRole}
           userRole="Admin"
+          username={username}
           isSidebarOpen={isSidebarOpen}
         />
         <div className="p-8">
@@ -255,7 +268,12 @@ const AdminLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => {
 };
 
 // Cashier Layout Component
-const CashierLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => {
+const CashierLayout = ({
+  isSidebarOpen,
+  toggleSidebar,
+  setUserRole,
+  username,
+}) => {
   const [activeTabTitle, setActiveTabTitle] = useState("Dashboard");
 
   return (
@@ -276,6 +294,7 @@ const CashierLayout = ({ isSidebarOpen, toggleSidebar, setUserRole }) => {
           toggleSidebar={toggleSidebar}
           setUserRole={setUserRole}
           userRole="Cashier"
+          username={username}
           isSidebarOpen={isSidebarOpen}
         />
         <div className="p-8">

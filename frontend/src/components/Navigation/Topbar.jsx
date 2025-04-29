@@ -14,7 +14,13 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const Topbar = ({ toggleSidebar, setUserRole, userRole, isSidebarOpen }) => {
+const Topbar = ({
+  toggleSidebar,
+  setUserRole,
+  userRole,
+  isSidebarOpen,
+  username,
+}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -102,7 +108,7 @@ const Topbar = ({ toggleSidebar, setUserRole, userRole, isSidebarOpen }) => {
             <UserRound className="topbar-icon profile-icon" />
             <span className="topbar-text">
               Welcome, <br />
-              <strong>{userRole}</strong>
+              <strong>{username || userRole || "Guest"}</strong>
             </span>
           </div>
 

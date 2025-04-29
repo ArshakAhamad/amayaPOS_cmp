@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "react-icons-kit";
 import { eyeOff } from "react-icons-kit/feather/eyeOff";
@@ -14,6 +15,13 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const savedUsername = localStorage.getItem("username");
+    if (savedUsername) {
+      setUsername(savedUsername);
+    }
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -24,9 +32,11 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
 
       if (response.data.success) {
         localStorage.setItem("token", response.data.token);
+        localStorage.setItem("username", response.data.user.username);
         const role = response.data.user.role;
         setIsAuthenticated(true);
         setUserRole(role);
+        setUsername(response.data.user.username);
         navigate(role === "Admin" ? "/AdminPanel" : "/CashierPanel");
       } else {
         setError(response.data.message);
