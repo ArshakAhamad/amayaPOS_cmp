@@ -2,6 +2,7 @@ import express from "express";
 import pool from "../config/db.js"; // Import your MySQL connection pool
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import bcrypt from "bcrypt";
 
 const router = express.Router();
 dotenv.config();
@@ -483,5 +484,44 @@ router.put(
     }
   }
 );
+
+router.post("/verify-password", verifyToken, async (req, res) => {
+  const { password } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const [user] = await pool.query(
+      "SELECT password FROM system_user WHERE id = ?",
+      [userId]
+    );
+
+    if (!user.length) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user[0].password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid password",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Password verified",
+    });
+  } catch (error) {
+    console.error("Password verification error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Password verification failed",
+    });
+  }
+});
 
 export default router;

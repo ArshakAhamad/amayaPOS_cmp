@@ -2,10 +2,16 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import Popup from "reactjs-popup";
+import { Icon } from "@iconify/react";
+import eyeOff from "@iconify/icons-mdi/eye-off";
+import eye from "@iconify/icons-mdi/eye";
 
 const SupplierBills = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // State declarations
   const [data, setData] = useState({
     supplier: null,
     settlements: [],
@@ -17,6 +23,17 @@ const SupplierBills = () => {
     loading: true,
     error: null,
   });
+
+  const [selectedBillId, setSelectedBillId] = useState(null);
+  const [approvalPassword, setApprovalPassword] = useState("");
+  const [passwordType, setPasswordType] = useState("password");
+  const [passwordIcon, setPasswordIcon] = useState(eyeOff);
+  const [settlingBill, setSettlingBill] = useState(null);
+
+  const togglePasswordVisibility = () => {
+    setPasswordType(passwordType === "password" ? "text" : "password");
+    setPasswordIcon(passwordIcon === eyeOff ? eye : eyeOff);
+  };
 
   const fetchSettlements = async () => {
     try {
@@ -36,7 +53,6 @@ const SupplierBills = () => {
       }
 
       const result = await response.json();
-      console.log("API Response:", result);
 
       if (result.success) {
         setData({
@@ -65,80 +81,62 @@ const SupplierBills = () => {
 
   const handleBack = () => navigate("/AdminPanel/SupplierList");
 
-  const [settlingBill, setSettlingBill] = useState(null);
+  const handleSettleBill = (billId) => {
+    setSelectedBillId(billId);
+  };
 
-  const handleSettleBill = async (billId) => {
-    setSettlingBill(billId);
+  const confirmSettlement = async (close) => {
+    if (!approvalPassword) {
+      toast.error("Please enter approval password");
+      return;
+    }
+
     try {
-      // 1. Get token from localStorage
+      setSettlingBill(selectedBillId);
       const token = localStorage.getItem("token");
 
-      // 2. Validate token exists
-      if (!token) {
-        toast.error("Please login to perform this action");
-        navigate("/login");
-        return;
-      }
-
-      // 3. Debugging - log the token being sent
-      console.log("Token being sent:", token);
-
-      // 4. Set default headers for axios (optional - can use instance instead)
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      // 5. Make the PUT request
-      const response = await axios.put(
-        `http://localhost:5000/api/suppliers/${id}/settlements/${billId}`,
-        {},
+      // Verify password first
+      const verifyResponse = await axios.post(
+        "http://localhost:5000/api/verify-password",
+        { password: approvalPassword },
         {
           headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }
       );
 
-      // 6. Handle successful response
+      if (!verifyResponse.data.success) {
+        throw new Error("Invalid approval password");
+      }
+
+      // If password is correct, proceed with settlement
+      const response = await axios.put(
+        `http://localhost:5000/api/suppliers/${id}/settlements/${selectedBillId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
       if (response.data.success) {
         toast.success("Bill settled successfully!");
-
-        // 7. Refresh the settlements data
         await fetchSettlements();
-
-        // 8. Optional: Log success
-        console.log("Settlement successful for bill:", billId);
-      } else {
-        // Handle API success=false case
-        toast.error(response.data.message || "Failed to settle bill");
+        setApprovalPassword("");
+        if (close) close();
       }
     } catch (error) {
       console.error("Settlement error:", error);
-
-      // 9. Enhanced error handling
       if (error.response) {
-        // Server responded with error status
-        if (error.response.status === 401) {
-          // Token expired or invalid
-          toast.error("Session expired - please login again");
-          localStorage.removeItem("token");
-          localStorage.removeItem("user"); // If you store user data
-          navigate("/login");
-        } else if (error.response.status === 404) {
-          toast.error("Bill not found");
-        } else if (error.response.status === 400) {
-          toast.error(error.response.data.message || "Invalid request");
-        } else {
-          toast.error(error.response.data.message || "Failed to settle bill");
-        }
-      } else if (error.request) {
-        // Request was made but no response received
-        toast.error("No response from server - please check your connection");
+        toast.error(error.response.data.message || "Failed to settle bill");
       } else {
-        // Something happened in setting up the request
-        toast.error("Error setting up request");
-        console.error("Request setup error:", error.message);
+        toast.error(error.message || "Settlement failed");
       }
     } finally {
-      // 10. Reset loading state
       setSettlingBill(null);
     }
   };
@@ -161,6 +159,36 @@ const SupplierBills = () => {
       day: "numeric",
     });
   };
+
+  if (data.loading) {
+    return (
+      <div className="main-content p-6">
+        <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.error) {
+    return (
+      <div className="main-content p-6">
+        <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-300">
+          <div className="text-red-500 text-center py-10">
+            {data.error}
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="main-content p-6">
@@ -222,15 +250,7 @@ const SupplierBills = () => {
               </tr>
             </thead>
             <tbody>
-              {data.loading ? (
-                <tr>
-                  <td colSpan="10" className="text-center py-8">
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
-                  </td>
-                </tr>
-              ) : data.settlements.length === 0 ? (
+              {data.settlements.length === 0 ? (
                 <tr>
                   <td colSpan="10" className="text-center py-4">
                     <div className="flex flex-col items-center">
@@ -296,19 +316,89 @@ const SupplierBills = () => {
                     </td>
                     <td className="px-4 py-3">
                       {settlement.settlement_date === null && (
-                        <button
-                          onClick={() => handleSettleBill(settlement.id)}
-                          disabled={settlingBill === settlement.id}
-                          className={`px-3 py-1 text-white rounded text-sm ${
-                            settlingBill === settlement.id
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-green-600 hover:bg-green-700"
-                          }`}
+                        <Popup
+                          trigger={
+                            <button
+                              disabled={settlingBill === settlement.id}
+                              className={`px-3 py-1 text-white rounded text-sm ${
+                                settlingBill === settlement.id
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-green-600 hover:bg-green-700"
+                              }`}
+                            >
+                              {settlingBill === settlement.id
+                                ? "Processing..."
+                                : "Settle"}
+                            </button>
+                          }
+                          modal
+                          onOpen={() => handleSettleBill(settlement.id)}
+                          onClose={() => {
+                            setPasswordType("password");
+                            setPasswordIcon(eyeOff);
+                            setApprovalPassword("");
+                          }}
                         >
-                          {settlingBill === settlement.id
-                            ? "Processing..."
-                            : "Settle"}
-                        </button>
+                          {(close) => (
+                            <div className="w-full p-4 bg-gray-900 text-white rounded-lg">
+                              <h3 className="text-xl font-bold mb-4">
+                                Confirm Bill Settlement
+                              </h3>
+                              <p className="mb-4">
+                                You are about to settle bill #{settlement.id}
+                              </p>
+                              <p className="mb-4 font-bold">
+                                Amount: {formatCurrency(settlement.amount)}
+                              </p>
+
+                              <div className="form-field mb-4">
+                                <label className="block mb-2">
+                                  Manager Password:
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={passwordType}
+                                    value={approvalPassword}
+                                    onChange={(e) =>
+                                      setApprovalPassword(e.target.value)
+                                    }
+                                    className="w-full p-2 pl-3 pr-10 border rounded bg-gray-800 text-white placeholder-gray-400"
+                                    placeholder="Enter password"
+                                  />
+                                  <span
+                                    className="absolute right-3 top-2.5 cursor-pointer"
+                                    onClick={togglePasswordVisibility}
+                                  >
+                                    <Icon icon={passwordIcon} size={20} />
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => {
+                                    close();
+                                    setApprovalPassword("");
+                                  }}
+                                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => confirmSettlement(close)}
+                                  className={`px-4 py-2 rounded text-white transition-colors ${
+                                    approvalPassword
+                                      ? "bg-blue-600 hover:bg-blue-700"
+                                      : "bg-blue-400 cursor-not-allowed"
+                                  }`}
+                                  disabled={!approvalPassword}
+                                >
+                                  Approve
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </Popup>
                       )}
                     </td>
                   </tr>
