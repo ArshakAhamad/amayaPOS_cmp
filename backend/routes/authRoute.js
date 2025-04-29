@@ -27,7 +27,7 @@ const authenticateUser = async (req, res, next) => {
 
     const [user] = await pool.execute(
       'SELECT id, username, role FROM system_user WHERE id = ? AND status = "Active"',
-      [decoded.id],
+      [decoded.id]
     );
 
     if (user.length === 0) {
@@ -85,7 +85,7 @@ router.get("/check-pos-access", authenticateUser, async (req, res) => {
         `SELECT 1 FROM sales_rep 
                  WHERE user_name = ? AND status = 'Active' 
                  LIMIT 1`,
-        [username],
+        [username]
       );
 
       if (salesRep.length > 0) {

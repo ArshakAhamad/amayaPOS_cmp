@@ -27,7 +27,6 @@ const Topbar = ({ toggleSidebar, setUserRole, userRole, isSidebarOpen }) => {
   const handleProfileClick = () => navigate(`/${userRole}Panel/Profile`);
   const handleLoginClick = () => navigate("/Login");
   const handleLogoutClick = () => navigate("/Logout");
-  
 
   // ✅ Cashier Panel Handler
   const handleCashierPanelClick = () => {
@@ -113,8 +112,8 @@ const Topbar = ({ toggleSidebar, setUserRole, userRole, isSidebarOpen }) => {
               <div className="dropdown-item" onClick={handleProfileClick}>
                 Profile
               </div>
-              
-               <div className="dropdown-item" onClick={handleLogoutClick}>
+
+              <div className="dropdown-item" onClick={handleLogoutClick}>
                 Logout
               </div>
             </div>
