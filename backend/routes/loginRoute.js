@@ -7,63 +7,61 @@ const router = express.Router();
 
 // Login Route
 router.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
   try {
-    const { username, password } = req.body;
-
-    // Check if username and password are provided
-    if (!username || !password) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Username and password are required.",
-        });
-    }
-
-    // Fetch user from the database
-    const [users] = await pool.execute(
+    // Find user by username
+    const [users] = await pool.query(
       "SELECT * FROM system_user WHERE username = ?",
-      [username],
+      [username]
     );
 
-    if (users.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
+    if (!users.length) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
     const user = users[0];
 
-    // Compare passwords
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid password." });
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }, // Token expires in 1 hour
-    );
+    // Create token payload
+    const payload = {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+    };
 
-    // Return success response with token
+    // Generate token
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "8h", // Token expires in 8 hours
+    });
+
     res.json({
       success: true,
-      message: "Login successful",
       token,
       user: {
         id: user.id,
         username: user.username,
-        email: user.email,
         role: user.role,
+        email: user.email,
       },
     });
-  } catch (err) {
-    console.error("Error during login:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during authentication",
+    });
   }
 });
 

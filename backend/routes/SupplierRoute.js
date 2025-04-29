@@ -21,20 +21,26 @@ const verifyToken = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Verify user exists in database
+    // Updated query to match your actual table structure
     const [user] = await pool.query(
-      "SELECT id, username FROM system_user WHERE id = ?",
+      "SELECT id, username, role FROM system_user WHERE id = ?",
       [decoded.id]
     );
 
-    if (!user.length || !user[0].is_active) {
+    if (!user.length) {
       return res.status(401).json({
         success: false,
-        message: "User not found or inactive",
+        message: "User not found",
       });
     }
 
-    req.user = user[0]; // Attach user to request
+    // Attach user data to request
+    req.user = {
+      id: user[0].id,
+      username: user[0].username,
+      role: user[0].role,
+    };
+
     next();
   } catch (error) {
     console.error("Token verification error:", error.message);
@@ -388,17 +394,17 @@ router.put(
       // 1. Verify the bill exists and is unsettled
       const [bill] = await pool.query(
         `SELECT 
-        sbs.id, 
-        sbs.amount, 
-        sbs.productin_id,
-        s.supplier_name,
-        s.id as supplier_id
-       FROM supplier_bill_settlements sbs
-       JOIN suppliers s ON sbs.supplier_id = s.id
-       WHERE sbs.id = ? 
-         AND sbs.supplier_id = ? 
-         AND sbs.settlement_date IS NULL
-       FOR UPDATE`,
+          sbs.id, 
+          sbs.amount, 
+          sbs.productin_id,
+          s.supplier_name,
+          s.id as supplier_id
+         FROM supplier_bill_settlements sbs
+         JOIN suppliers s ON sbs.supplier_id = s.id
+         WHERE sbs.id = ? 
+           AND sbs.supplier_id = ? 
+           AND sbs.settlement_date IS NULL
+         FOR UPDATE`,
         [billId, supplierId]
       );
 
@@ -417,23 +423,21 @@ router.put(
         .replace("T", " ");
       const settledBy = username || `User ${userId}`;
 
-      // 2. Update settlement record
+      // 2. Update settlement record (without updated_at)
       await pool.query(
         `UPDATE supplier_bill_settlements 
-       SET settlement_date = ?, 
-           settled_by = ?,
-           updated_at = NOW()
-       WHERE id = ?`,
+         SET settlement_date = ?, 
+             settled_by = ?
+         WHERE id = ?`,
         [currentDate, settledBy, billId]
       );
 
-      // 3. Update productin record if exists
+      // 3. Update productin record if exists (without settled_at)
       if (bill[0].productin_id) {
         await pool.query(
           `UPDATE productin 
-         SET is_settled = 1,
-             settled_at = NOW()
-         WHERE id = ?`,
+           SET is_settled = 1
+           WHERE id = ?`,
           [bill[0].productin_id]
         );
       }
@@ -441,23 +445,14 @@ router.put(
       // 4. Update supplier's outstanding balance
       await pool.query(
         `UPDATE suppliers 
-       SET outstanding = GREATEST(0, ROUND(COALESCE(outstanding, 0) - ?, 2)),
-           updated_at = NOW()
-       WHERE id = ?`,
+         SET outstanding = GREATEST(0, ROUND(COALESCE(outstanding, 0) - ?, 2))
+         WHERE id = ?`,
         [amount, supplierId]
-      );
-
-      // 5. Log the settlement
-      await pool.query(
-        `INSERT INTO settlement_logs 
-       (bill_id, supplier_id, amount, settled_by, settlement_date)
-       VALUES (?, ?, ?, ?, ?)`,
-        [billId, supplierId, amount, settledBy, currentDate]
       );
 
       await pool.query("COMMIT");
 
-      // 6. Get updated data for response
+      // 5. Get updated data for response
       const [updatedSupplier] = await pool.query(
         `SELECT supplier_name, outstanding FROM suppliers WHERE id = ?`,
         [supplierId]

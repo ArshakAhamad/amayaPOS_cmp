@@ -65,43 +65,81 @@ const SupplierBills = () => {
 
   const handleBack = () => navigate("/AdminPanel/SupplierList");
 
-  const handleSettleBill = async (billId) => {
-    try {
-      const token = localStorage.getItem("token");
-      console.log("Current token:", token); // Debug log
+  const [settlingBill, setSettlingBill] = useState(null);
 
+  const handleSettleBill = async (billId) => {
+    setSettlingBill(billId);
+    try {
+      // 1. Get token from localStorage
+      const token = localStorage.getItem("token");
+
+      // 2. Validate token exists
       if (!token) {
-        toast.error("Please login again");
+        toast.error("Please login to perform this action");
         navigate("/login");
         return;
       }
 
-      // Make the request WITHOUT client-side verification
+      // 3. Debugging - log the token being sent
+      console.log("Token being sent:", token);
+
+      // 4. Set default headers for axios (optional - can use instance instead)
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      // 5. Make the PUT request
       const response = await axios.put(
         `http://localhost:5000/api/suppliers/${id}/settlements/${billId}`,
         {},
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }
       );
 
+      // 6. Handle successful response
       if (response.data.success) {
         toast.success("Bill settled successfully!");
-        fetchSettlements();
+
+        // 7. Refresh the settlements data
+        await fetchSettlements();
+
+        // 8. Optional: Log success
+        console.log("Settlement successful for bill:", billId);
+      } else {
+        // Handle API success=false case
+        toast.error(response.data.message || "Failed to settle bill");
       }
     } catch (error) {
-      console.error("Full error:", error);
+      console.error("Settlement error:", error);
 
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        toast.error("Session expired - please login again");
-        navigate("/login");
+      // 9. Enhanced error handling
+      if (error.response) {
+        // Server responded with error status
+        if (error.response.status === 401) {
+          // Token expired or invalid
+          toast.error("Session expired - please login again");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user"); // If you store user data
+          navigate("/login");
+        } else if (error.response.status === 404) {
+          toast.error("Bill not found");
+        } else if (error.response.status === 400) {
+          toast.error(error.response.data.message || "Invalid request");
+        } else {
+          toast.error(error.response.data.message || "Failed to settle bill");
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        toast.error("No response from server - please check your connection");
       } else {
-        toast.error(error.response?.data?.message || "Failed to settle bill");
+        // Something happened in setting up the request
+        toast.error("Error setting up request");
+        console.error("Request setup error:", error.message);
       }
+    } finally {
+      // 10. Reset loading state
+      setSettlingBill(null);
     }
   };
 
@@ -260,9 +298,16 @@ const SupplierBills = () => {
                       {settlement.settlement_date === null && (
                         <button
                           onClick={() => handleSettleBill(settlement.id)}
-                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                          disabled={settlingBill === settlement.id}
+                          className={`px-3 py-1 text-white rounded text-sm ${
+                            settlingBill === settlement.id
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : "bg-green-600 hover:bg-green-700"
+                          }`}
                         >
-                          Settle
+                          {settlingBill === settlement.id
+                            ? "Processing..."
+                            : "Settle"}
                         </button>
                       )}
                     </td>
