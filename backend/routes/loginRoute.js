@@ -1,6 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs"; // For password hashing
+import bcrypt from "bcryptjs";
 import pool from "../config/db.js"; // Adjust the path to your db.js file
 
 const router = express.Router();

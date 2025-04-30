@@ -2,7 +2,7 @@ import express from "express";
 import pool from "../config/db.js"; // Import your MySQL connection pool
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const router = express.Router();
 dotenv.config();

@@ -1,6 +1,6 @@
 import express from "express";
 import pool from "../config/db.js"; // MySQL connection pool
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const router = express.Router();
 
@@ -34,12 +34,12 @@ router.post("/sales-rep", async (req, res) => {
     // Check if username exists
     const [salesRepCheck] = await connection.query(
       "SELECT 1 FROM sales_rep WHERE user_name = ? LIMIT 1",
-      [username],
+      [username]
     );
 
     const [systemUserCheck] = await connection.query(
       "SELECT 1 FROM system_user WHERE username = ? LIMIT 1",
-      [username],
+      [username]
     );
 
     if (salesRepCheck.length > 0 || systemUserCheck.length > 0) {
@@ -64,7 +64,7 @@ router.post("/sales-rep", async (req, res) => {
         phone,
         remarks,
         notificationMethod,
-      ],
+      ]
     );
 
     // If manual notification, create system user with hashed password
@@ -77,7 +77,7 @@ router.post("/sales-rep", async (req, res) => {
           `INSERT INTO system_user 
           (username, email, password, role) 
           VALUES (?, ?, ?, ?)`,
-          [username, email, hashedPassword, "Cashier"],
+          [username, email, hashedPassword, "Cashier"]
         );
       } catch (hashError) {
         console.error("Password hashing error:", hashError);
@@ -147,7 +147,7 @@ router.patch("/sales-rep/status/:id", async (req, res) => {
     // Update the status in the database
     const [result] = await pool.execute(
       "UPDATE sales_rep SET status = ? WHERE salesrep_id = ?",
-      [status, id],
+      [status, id]
     );
 
     if (result.affectedRows > 0) {
@@ -185,7 +185,7 @@ router.put("/sales-reps/:id", async (req, res) => {
     // Check if sales rep exists
     const [existingRep] = await pool.execute(
       "SELECT * FROM sales_rep WHERE salesrep_id = ?",
-      [id],
+      [id]
     );
     if (existingRep.length === 0) {
       return res
@@ -217,14 +217,14 @@ router.put("/sales-reps/:id", async (req, res) => {
         notification_method,
         status,
         id,
-      ],
+      ]
     );
 
     if (result.affectedRows > 0) {
       // Fetch the updated record
       const [updatedRep] = await pool.execute(
         "SELECT * FROM sales_rep WHERE salesrep_id = ?",
-        [id],
+        [id]
       );
       return res.json({
         success: true,
