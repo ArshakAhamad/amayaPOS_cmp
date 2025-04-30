@@ -7,7 +7,6 @@ const router = express.Router();
 router.post("/cart", async (req, res) => {
   const { productId, quantity, status } = req.body;
 
-  // Validate required fields
   if (!productId || !quantity || !status) {
     return res.status(400).json({
       success: false,
@@ -16,14 +15,8 @@ router.post("/cart", async (req, res) => {
   }
 
   try {
-    // Fetch product details from the database
     const [product] = await pool.execute(
-      `SELECT 
-        id, 
-        product_name, 
-        price 
-      FROM products 
-      WHERE id = ?`,
+      `SELECT id, product_name, price FROM products WHERE id = ?`,
       [productId]
     );
 
@@ -34,16 +27,8 @@ router.post("/cart", async (req, res) => {
     }
 
     const { product_name, price } = product[0];
-
-    // Insert the product into the cart table
     const [result] = await pool.execute(
-      `INSERT INTO cart (
-        product_id, 
-        product_name, 
-        price, 
-        quantity, 
-        status
-      ) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO cart (product_id, product_name, price, quantity, status) VALUES (?, ?, ?, ?, ?)`,
       [productId, product_name, price, quantity, status]
     );
 
@@ -62,6 +47,37 @@ router.post("/cart", async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Server error", error: err.message });
+  }
+});
+
+// GET /api/vouchers/:code - Validate voucher
+router.get("/vouchers/:code", async (req, res) => {
+  const { code } = req.params;
+
+  try {
+    const [voucher] = await pool.execute(
+      `SELECT * FROM vouchers WHERE code = ? AND status = 'Issued' AND active = 'Active'`,
+      [code]
+    );
+
+    if (voucher.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Voucher not found or already used",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      voucher: voucher[0],
+    });
+  } catch (err) {
+    console.error("Error fetching voucher:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 });
 
@@ -137,20 +153,20 @@ router.get("/cart", async (req, res) => {
   }
 });
 
-// POST /api/payment - Process payment for the cart
+// POST /api/payment - Process payment
 router.post("/payment", async (req, res) => {
   const {
     paymentMethod,
     totalAmount,
     cartItems,
-    customer = "Walk-In-Customer", // Default value
-    phone = "+94757110053", // Default value
-    receiptNumber = 2865, // Default value
-    cash = totalAmount, // Default value (use totalAmount if not provided)
-    card = 0, // Default value
+    customer = "Walk-In-Customer",
+    phone = "+94757110053",
+    receiptNumber = 2865,
+    cash = totalAmount,
+    card = 0,
+    voucher_id = null,
   } = req.body;
 
-  // Validate required fields
   if (!paymentMethod || !totalAmount || !cartItems || cartItems.length === 0) {
     return res.status(400).json({
       success: false,
@@ -160,13 +176,10 @@ router.post("/payment", async (req, res) => {
 
   let connection;
   try {
-    // Get a connection from the pool
     connection = await pool.getConnection();
-
-    // Start a database transaction
     await connection.beginTransaction();
 
-    // Insert the payment details into the payments table
+    // Insert payment
     const [paymentResult] = await connection.execute(
       `INSERT INTO payments (
         payment_method, 
@@ -177,8 +190,9 @@ router.post("/payment", async (req, res) => {
         cash,
         card,
         created_by,
-        status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        status,
+        voucher_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         paymentMethod,
         totalAmount,
@@ -189,13 +203,14 @@ router.post("/payment", async (req, res) => {
         card,
         "Admin",
         "Active",
-      ] // Default values for created_by and status
+        voucher_id,
+      ]
     );
 
     if (paymentResult.affectedRows > 0) {
       const paymentId = paymentResult.insertId;
 
-      // Insert each cart item into the payment_items table
+      // Insert payment items
       for (const item of cartItems) {
         await connection.execute(
           `INSERT INTO payment_items (
@@ -209,28 +224,51 @@ router.post("/payment", async (req, res) => {
         );
       }
 
-      // Commit the transaction
-      await connection.commit();
+      if (voucher_id) {
+        // Verify voucher is still valid
+        const [voucherCheck] = await connection.execute(
+          `SELECT * FROM vouchers 
+     WHERE id = ? AND status = 'Issued' AND active = 'Active'`,
+          [voucher_id]
+        );
 
-      res
-        .status(201)
-        .json({ success: true, message: "Payment processed successfully." });
+        if (voucherCheck.length === 0) {
+          await connection.rollback();
+          return res.status(400).json({
+            success: false,
+            message: "Voucher is no longer valid",
+          });
+        }
+
+        // Mark voucher as redeemed
+        await connection.execute(
+          `UPDATE vouchers 
+     SET status = 'Redeemed',
+         redeemed_date = NOW(),
+         active = 'Inactive'
+     WHERE id = ?`,
+          [voucher_id]
+        );
+      }
+
+      await connection.commit();
+      res.status(201).json({
+        success: true,
+        message: "Payment processed successfully.",
+      });
     } else {
-      // Rollback the transaction if payment insertion fails
       await connection.rollback();
       res
         .status(500)
         .json({ success: false, message: "Failed to process payment." });
     }
   } catch (err) {
-    // Rollback the transaction on error
     if (connection) await connection.rollback();
     console.error("Error processing payment:", err);
     res
       .status(500)
       .json({ success: false, message: "Server error", error: err.message });
   } finally {
-    // Release the connection back to the pool
     if (connection) connection.release();
   }
 });
@@ -247,9 +285,10 @@ router.get("/customers", async (req, res) => {
   }
 
   try {
+    // Use exact matching in the SQL query
     const [customers] = await pool.execute(
-      "SELECT * FROM customers WHERE customer_phone LIKE ?",
-      [`%${phone}%`]
+      "SELECT * FROM customers WHERE customer_phone = ?",
+      [phone.trim()] // Trim whitespace from the search
     );
 
     res.status(200).json({
